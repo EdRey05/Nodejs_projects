@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MD Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+  <style>
+    .tree-entry[data-depth="0"] { --tree-color: #94a3b8; }
+    .tree-entry[data-depth="1"] { --tree-color: #6366f1; }
+    .tree-entry[data-depth="2"] { --tree-color: #22c55e; }
+    .tree-entry[data-depth="3"] { --tree-color: #0ea5e9; }
+    .tree-entry[data-depth="4"] { --tree-color: #f59e0b; }
+    .tree-entry[data-depth="5"] { --tree-color: #ef4444; }
+    .tree-entry[data-depth="6"] { --tree-color: #a855f7; }
+    .tree-entry {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 16px;
+      font-size: 13px;
+      color: var(--tree-color, var(--text-secondary));
+      cursor: pointer;
+      transition: all 0.1s;
+      user-select: none;
+    }
+    .tree-entry:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    .tree-entry.active {
+      background: var(--accent);
+      color: white;
+    }
+    .tree-entry .tree-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+    .tree-entry .tree-arrow { font-size: 10px; width: 14px; text-align: center; flex-shrink: 0; }
+    .tree-entry .tree-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tree-children { display: none; }
+    .tree-children.open { display: block; }
+    .new-file-btn {
+      display: flex; align-items: center; gap: 6px;
+      width: calc(100% - 24px); margin: 8px 12px; padding: 6px 10px;
+      background: var(--bg-tertiary); border: 1px dashed var(--border);
+      border-radius: 6px; color: var(--text-secondary); font-size: 12px;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .new-file-btn:hover {
+      color: var(--text-primary); border-color: var(--accent); background: var(--accent-glow);
+    }
+  </style>
+</head>
+<body>
+  <!-- ============================ MOUNT SCREEN ============================ -->
+  <div id="mount-screen" style="display:none;">
+    <div class="mount-card">
+      <div class="mount-icon">📂</div>
+      <h1>MD Studio</h1>
+      <p class="mount-desc">Select a directory to browse and edit markdown files.</p>
+
+      <div class="mount-form">
+        <input type="text" id="mount-path" placeholder="C:\\Users\\..." autocomplete="off" spellcheck="false">
+        <div class="mount-actions">
+          <button class="btn-primary" onclick="doMount()">Mount Workspace</button>
+          <button class="btn-secondary" onclick="clearMount()">Clear Saved</button>
+        </div>
+      </div>
+
+      <div class="mount-note">
+        You can also use a PowerShell picker script to launch the app.
+        <br>Save a path above and MD Studio will remember it for next time.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================ EDITOR SCREEN ============================= -->
+  <div id="editor-screen" style="display:none;">
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-brand">
+        <span class="brand-icon">📝</span>
+        <span class="brand-name">MD Studio</span>
+      </div>
+      <div class="topbar-workspace" id="workspace-display"></div>
+      <div class="topbar-actions">
+        <button class="topbar-btn" onclick="changeWorkspace()" title="Switch workspace">↻ Change</button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="page-body" style="padding:0;">
+      <div class="memory-layout">
+        <!-- File Tree -->
+        <div class="file-browser">
+          <div class="file-browser-header">
+            <span>Explorer</span>
+            <div>
+              <button onclick="loadTree()" title="Refresh tree">↻</button>
+              <button class="sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Hide sidebar">◀</button>
+            </div>
+          </div>
+          <button class="new-file-btn" onclick="createNewFile()">+ New Markdown File</button>
+          <div class="file-list" id="file-tree">
+            <div class="tree-entry" style="opacity:0.5;cursor:default;">
+              <span class="tree-icon">⏳</span><span class="tree-name">Loading...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editor / Viewer -->
+        <div class="memory-editor">
+          <div class="editor-tabs">
+            <div class="editor-tab" data-tab="preview" onclick="switchTab('preview')">Preview</div>
+            <div class="editor-tab" data-tab="edit" onclick="switchTab('edit')">Edit</div>
+            <div class="editor-tab" data-tab="split" onclick="switchTab('split')">Split</div>
+            <div style="flex:1;"></div>
+            <div class="view-toggles">
+              <button class="view-toggle-btn" id="split-sync-btn" onclick="toggleSplitSync()" title="Toggle scroll sync">🔗 Sync</button>
+            </div>
+          </div>
+          <div class="editor-body" id="editor-body">
+            <div class="empty-state">
+              <div class="empty-icon">📂</div>
+              <div>Select a file from the explorer</div>
+            </div>
+          </div>
+          <div class="editor-footer">
+            <span id="file-status">No file selected</span>
+            <button class="save-btn" id="save-btn" onclick="saveFile()" disabled>Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Sidebar rescue button (when sidebar collapsed) -->
+    <button class="sidebar-rescue" id="sidebar-rescue-btn" onclick="toggleSidebar()" title="Show sidebar">▶</button>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    let currentFile = null;
+    let currentContent = '';
+    let currentTab = 'preview';
+    let isDirty = false;
+    let expandedFolders = new Set(['']);
+    let sidebarCollapsed = false;
+    let splitSyncEnabled = true;
+
+    // ─── Mount / Workspace Logic ────────────────────────────────────────
+
+    async function init() {
+      try {
+        const data = await API.getWorkspace();
+        if (data.mounted && data.workspace) {
+          showEditor(data.workspace);
+        } else {
+          showMount();
+        }
+      } catch (err) {
+        showMount();
+      }
+    }
+
+    function showMount() {
+      document.getElementById('mount-screen').style.display = '';
+      document.getElementById('editor-screen').style.display = 'none';
+    }
+
+    function showEditor(workspacePath) {
+      document.getElementById('mount-screen').style.display = 'none';
+      document.getElementById('editor-screen').style.display = '';
+      document.getElementById('workspace-display').textContent = workspacePath;
+      switchTab('preview');
+      loadTree();
+    }
+
+    async function doMount() {
+      const input = document.getElementById('mount-path');
+      const path = input.value.trim();
+      if (!path) {
+        showToast('Please enter a directory path', 'error');
+        return;
+      }
+      try {
+        const result = await API.setWorkspace(path);
+        if (result.success) {
+          showToast('Workspace mounted!', 'success');
+          showEditor(result.workspace);
+        } else {
+          showToast(result.error || 'Failed to mount', 'error');
+        }
+      } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    async function clearMount() {
+      try {
+        await API.clearWorkspace();
+        document.getElementById('mount-path').value = '';
+        showToast('Saved workspace cleared', 'info');
+      } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    async function changeWorkspace() {
+      try {
+        await API.clearWorkspace();
+        showMount();
+      } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    // ─── File Tree ──────────────────────────────────────────────────
+
+    async function loadTree() {
+      const tree = document.getElementById('file-tree');
+      tree.innerHTML = '<div class="tree-entry" style="opacity:0.5;cursor:default;"><span class="tree-icon">⏳</span><span class="tree-name">Loading...</span></div>';
+      try {
+        const rootEntries = await API.listFiles('');
+        tree.innerHTML = '';
+        renderTreeLevel(rootEntries, '', tree, 0);
+      } catch (err) {
+        tree.innerHTML = `<div class="tree-entry" style="color:var(--danger);"><span class="tree-icon">❌</span><span class="tree-name">Error: ${err.message}</span></div>`;
+      }
+    }
+
+    function renderTreeLevel(entries, parentPath, container, depth) {
+      const sorted = [...entries].sort((a, b) => {
+        if (a.isDirectory && !b.isDirectory) return -1;
+        if (!a.isDirectory && b.isDirectory) return 1;
+        return a.name.localeCompare(b.name);
+      });
+      for (const entry of sorted) {
+        const entryPath = parentPath ? `${parentPath}/${entry.name}` : entry.name;
+        if (entry.isDirectory) {
+          const isExpanded = expandedFolders.has(entryPath);
+          const indent = 16 + depth * 12;
+          const dirDiv = document.createElement('div');
+          dirDiv.innerHTML = `
+            <div class="tree-entry" data-path="${entryPath}" data-depth="${depth}" onclick="toggleFolder('${entryPath}')" style="padding-left:${indent}px;">
+              <span class="tree-arrow">${isExpanded ? '▼' : '▶'}</span>
+              <span class="tree-icon">📁</span>
+              <span class="tree-name">${entry.name}</span>
+            </div>
+            <div class="tree-children ${isExpanded ? 'open' : ''}" id="children-${entryPath.replace(/\\/g, '-')}"></div>
+          `;
+          container.appendChild(dirDiv);
+          if (isExpanded) loadChildren(entryPath, depth + 1);
+        } else if (entry.name.endsWith('.md')) {
+          const isActive = currentFile === entryPath;
+          const indent = 16 + depth * 12;
+          const fileDiv = document.createElement('div');
+          fileDiv.innerHTML = `
+            <div class="tree-entry${isActive ? ' active' : ''}" data-path="${entryPath}" data-depth="${depth}" onclick="openFile('${entryPath}')" style="padding-left:${indent}px;">
+              <span class="tree-arrow"></span>
+              <span class="tree-icon">📄</span>
+              <span class="tree-name">${entry.name}</span>
+            </div>
+          `;
+          container.appendChild(fileDiv);
+        }
+      }
+    }
+
+    async function loadChildren(dirPath, depth) {
+      const childrenId = 'children-' + dirPath.replace(/\\/g, '-');
+      const childrenContainer = document.getElementById(childrenId);
+      if (!childrenContainer) return;
+      try {
+        const entries = await API.listFiles(dirPath);
+        childrenContainer.innerHTML = '';
+        renderTreeLevel(entries, dirPath, childrenContainer, depth);
+      } catch (err) {
+        childrenContainer.innerHTML = `<div class="tree-entry" style="color:var(--danger);padding-left:${16 + depth * 16}px;"><span class="tree-name">Error: ${err.message}</span></div>`;
+      }
+    }
+
+    async function toggleFolder(dirPath) {
+      if (expandedFolders.has(dirPath)) expandedFolders.delete(dirPath);
+      else expandedFolders.add(dirPath);
+      await loadTree();
+    }
+
+    // ─── New File ────────────────────────────────────────────────────
+
+    async function createNewFile() {
+      let parentFolder = '';
+      if (currentFile) {
+        const lastSlash = currentFile.lastIndexOf('/');
+        if (lastSlash > 0) parentFolder = currentFile.substring(0, lastSlash);
+      }
+      const fileName = prompt('New file name (e.g., notes.md):');
+      if (!fileName) return;
+      const finalName = fileName.endsWith('.md') ? fileName : fileName + '.md';
+      const filePath = parentFolder ? `${parentFolder}/${finalName}` : finalName;
+      try {
+        const result = await API.writeFile(filePath, `# ${finalName.replace('.md', '')}\n\n`);
+        if (result.success) {
+          showToast(`Created ${finalName}`, 'success');
+          if (parentFolder) expandedFolders.add(parentFolder);
+          await loadTree();
+          openFile(filePath);
+        } else {
+          showToast('Failed: ' + (result.error || 'Unknown error'), 'error');
+        }
+      } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    // ─── Open File ──────────────────────────────────────────────────
+
+    async function openFile(relPath) {
+      document.querySelectorAll('.tree-entry').forEach(el => el.classList.remove('active'));
+      const active = document.querySelector(`.tree-entry[data-path="${relPath}"]`);
+      if (active) active.classList.add('active');
+      try {
+        const data = await API.readFile(relPath);
+        currentFile = relPath;
+        currentContent = data.content !== undefined ? data.content : '';
+        isDirty = false;
+        document.getElementById('file-status').textContent = relPath.split('/').pop();
+        document.getElementById('save-btn').disabled = true;
+        if (currentTab === 'edit') renderEditor();
+        else if (currentTab === 'split') renderSplit();
+        else renderPreview();
+      } catch (err) {
+        showToast('Failed to load: ' + err.message, 'error');
+      }
+    }
+
+    // ─── Tab Switching ──────────────────────────────────────────────
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.editor-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+      const syncBtn = document.getElementById('split-sync-btn');
+      const hasFile = !!currentFile;
+      if (syncBtn) {
+        if (hasFile && tab === 'split') syncBtn.classList.remove('hidden');
+        else syncBtn.classList.add('hidden');
+      }
+      if (!hasFile) return;
+      if (tab === 'edit') renderEditor();
+      else if (tab === 'split') renderSplit();
+      else {
+        const ta = document.querySelector('.editor-body textarea');
+        if (ta) currentContent = ta.value;
+        renderPreview();
+      }
+    }
+
+    function renderPreview() {
+      cleanupSplit();
+      const body = document.getElementById('editor-body');
+      if (!currentFile || currentContent === null || currentContent === undefined) {
+        body.innerHTML = `<div class="preview"><p style="opacity:0.5;">Select a file to preview</p></div>`;
+        return;
+      }
+      const mdContent = String(currentContent || '');
+      API.renderMarkdown(mdContent).then(html => {
+        body.innerHTML = `<div class="preview">${html || ''}</div>`;
+      }).catch(() => {
+        body.innerHTML = `<div class="preview"><pre>${escapeHtml(mdContent)}</pre></div>`;
+      });
+    }
+
+    function renderEditor() {
+      cleanupSplit();
+      const body = document.getElementById('editor-body');
+      body.innerHTML = `<textarea spellcheck="false">${escapeHtml(currentContent)}</textarea>`;
+      const ta = body.querySelector('textarea');
+      ta.addEventListener('input', () => {
+        isDirty = true;
+        document.getElementById('save-btn').disabled = false;
+      });
+    }
+
+    let splitDebounce = null;
+
+    function cleanupSplit() {
+      if (splitDebounce) { clearTimeout(splitDebounce); splitDebounce = null; }
+    }
+
+    async function renderSplit() {
+      cleanupSplit();
+      const body = document.getElementById('editor-body');
+      if (!currentFile || currentContent === null || currentContent === undefined) {
+        body.innerHTML = `<div class="preview" style="display:flex;align-items:center;justify-content:center;"><p style="opacity:0.5;">Select a file to preview</p></div>`;
+        return;
+      }
+
+      body.innerHTML = `
+        <div class="split-layout">
+          <div class="split-pane split-preview" id="split-preview-pane">
+            <div class="preview" id="split-preview-content"></div>
+          </div>
+          <div class="split-divider"></div>
+          <div class="split-pane split-editor">
+            <textarea spellcheck="false">${escapeHtml(currentContent)}</textarea>
+          </div>
+        </div>
+      `;
+
+      function updatePreview() {
+        const md = String(document.querySelector('.split-editor textarea').value || '');
+        API.renderMarkdown(md).then(html => {
+          const el = document.getElementById('split-preview-content');
+          if (el) el.innerHTML = html || '';
+        }).catch(() => {
+          const el = document.getElementById('split-preview-content');
+          if (el) el.innerHTML = `<pre>${escapeHtml(md)}</pre>`;
+        });
+      }
+
+      const ta = body.querySelector('.split-editor textarea');
+      ta.addEventListener('input', () => {
+        isDirty = true;
+        document.getElementById('save-btn').disabled = false;
+        if (splitDebounce) clearTimeout(splitDebounce);
+        splitDebounce = setTimeout(updatePreview, 250);
+      });
+
+      // initial render
+      updatePreview();
+
+      // ─── Percentage-based scroll sync ───────────────────────────────
+      const editorPane = body.querySelector('.split-editor textarea');
+      const previewPane = body.querySelector('.split-preview .preview');
+      let isSyncing = false;
+
+      function syncScroll(source, target) {
+        if (!splitSyncEnabled || !source || !target || isSyncing) return;
+        const sH = source.scrollHeight - source.clientHeight;
+        const tH = target.scrollHeight - target.clientHeight;
+        if (sH <= 0 || tH <= 0) return;
+        let ratio = source.scrollTop / sH;
+        if (source === previewPane) {
+          // Preview driving editor: editor must scroll slightly MORE
+          ratio = Math.min(1, ratio + 0.06);
+        } else {
+          // Editor driving preview: preview jumps AHEAD, pull it back
+          ratio = Math.max(0, ratio - 0.04);
+        }
+        const targetTop = ratio * tH;
+        // Deadzone: skip if already close (avoids jitter from echo events)
+        if (Math.abs(target.scrollTop - targetTop) < 2) return;
+        isSyncing = true;
+        target.scrollTop = targetTop;
+        // Clear flag in next tick — echo scroll events fire synchronously
+        // in the same tick, so this blocks them cleanly.
+        setTimeout(() => { isSyncing = false; }, 0);
+      }
+
+      editorPane.addEventListener('scroll', () => syncScroll(editorPane, previewPane));
+      previewPane.addEventListener('scroll', () => syncScroll(previewPane, editorPane));
+    }
+
+    function getEditorContent() {
+      if (currentTab === 'edit') {
+        const ta = document.querySelector('.editor-body textarea');
+        return ta ? ta.value : currentContent;
+      }
+      if (currentTab === 'split') {
+        const ta = document.querySelector('.split-editor textarea');
+        return ta ? ta.value : currentContent;
+      }
+      return currentContent;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // ─── Save ───────────────────────────────────────────────────────
+
+    async function saveFile() {
+      if (!currentFile) return;
+      const content = getEditorContent();
+      if (content === null || content === undefined) return;
+      try {
+        const result = await API.writeFile(currentFile, content);
+        if (result.success) {
+          currentContent = content; isDirty = false;
+          showToast('File saved!', 'success');
+          document.getElementById('save-btn').disabled = true;
+        } else {
+          showToast('Save failed: ' + (result.error || 'Unknown error'), 'error');
+        }
+      } catch (err) {
+        showToast('Save error: ' + err.message, 'error');
+      }
+    }
+
+    // ─── View Toggles ─────────────────────────────────────────────────
+
+    function toggleSidebar() {
+      sidebarCollapsed = !sidebarCollapsed;
+      const sidebar = document.querySelector('.file-browser');
+      const rescue = document.getElementById('sidebar-rescue-btn');
+      const toggleBtn = document.getElementById('sidebar-toggle-btn');
+      if (sidebarCollapsed) {
+        sidebar.style.display = 'none';
+        if (rescue) rescue.classList.add('visible');
+        if (toggleBtn) toggleBtn.textContent = '▶';
+      } else {
+        sidebar.style.display = '';
+        if (rescue) rescue.classList.remove('visible');
+        if (toggleBtn) toggleBtn.textContent = '◀';
+      }
+    }
+
+    function toggleSplitSync() {
+      splitSyncEnabled = !splitSyncEnabled;
+      const btn = document.getElementById('split-sync-btn');
+      if (btn) {
+        btn.textContent = splitSyncEnabled ? '🔗 Sync' : '🔗 Sync: off';
+        btn.classList.toggle('active', splitSyncEnabled);
+      }
+    }
+
+    // ─── Keyboard Shortcuts ─────────────────────────────────────────
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveFile();
+      }
+    });
+
+    // Press Enter in mount path input triggers mount
+    document.getElementById('mount-path').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doMount();
+    });
+
+    // ─── Init ───────────────────────────────────────────────────────
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/eduar/Desktop/Github_EdRey05/Electron_projects/001_FileSync/**)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc *)"
+    ]
+  }
+}
