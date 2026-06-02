@@ -3,12 +3,30 @@
   "version": "1.0.0",
   "description": "A lightweight markdown workspace viewer and editor",
   "main": "server.js",
+  "bin": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "build": "pkg . && echo 'Build complete. Exe is in dist/md-studio.exe'"
   },
   "dependencies": {
     "express": "^4.21.0",
     "marked": "^15.0.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "pkg": {
+    "scripts": [
+      "server.js"
+    ],
+    "assets": [
+      "public/**/*",
+      "config.json"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ],
+    "outputPath": "dist"
   }
 }

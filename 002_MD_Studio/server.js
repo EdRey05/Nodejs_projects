@@ -6,7 +6,12 @@ const marked = markedModule.parse ? markedModule : markedModule.marked;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const CONFIG_FILE = path.join(__dirname, 'config.json');
+
+// When packaged as .exe (via pkg), writes inside __dirname are read-only.
+// Save config.json next to the executable instead.
+const isBundled = typeof process.pkg !== 'undefined';
+const BASE_DIR = isBundled ? path.dirname(process.execPath) : __dirname;
+const CONFIG_FILE = path.join(BASE_DIR, 'config.json');
 
 // ─── Workspace Resolution ───────────────────────────────────────────
 
