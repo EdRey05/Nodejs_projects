@@ -1,0 +1,9 @@
+# Requires: Node >= 20, Python >= 3.10, uv (or pip) on PATH.
+# Reproduces the portable exe: run npm install (deps), then npm run build (Node side), then npm run build:runtime (Python side), then npm run package:win.
+node_modules
+release
+python-app/runtime
+python-app/runtime-venv
+python-app/pip-dist
+.virtegen
+.next

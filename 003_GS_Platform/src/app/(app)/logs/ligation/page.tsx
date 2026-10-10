@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useDatabase } from '../../_context/DatabaseContext';
-import { useAppContext } from '../../_context/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from '@/components/ui/carousel';
 import { GitBranch } from 'lucide-react';
 import { LogSearchCombobox } from '@/components/ui/log-search-combobox';
+import { ExportLogButton } from '@/components/export-log-button';
+import { useCarouselArrows } from '@/hooks/use-carousel-arrows';
 import * as xlsx from 'xlsx';
 
 type GroupedLogData = {
@@ -18,10 +19,10 @@ type GroupedLogData = {
 
 export default function LigationLogPage() {
   const { databases } = useDatabase();
-  const { updateContext } = useAppContext();
   const [groupedData, setGroupedData] = useState<GroupedLogData[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [api, setApi] = useState<CarouselApi>();
+  useCarouselArrows(api);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -118,45 +119,6 @@ export default function LigationLogPage() {
     setIsLoading(false);
   }, [databases]);
 
-  useEffect(() => {
-    if (!api) {
-        return;
-    }
-
-    const updateCarouselContext = () => {
-        if (!groupedData || groupedData.length === 0) {
-            updateContext(JSON.stringify({ page: "Ligation Log", status: "No data loaded." }, null, 2));
-            return;
-        }
-
-        const currentSnap = api.selectedScrollSnap();
-        setCurrentIndex(currentSnap);
-        const totalSnaps = api.scrollSnapList().length;
-        const currentGroup = groupedData[currentSnap];
-        
-        if (!currentGroup) return;
-
-        const context = {
-            page: "Ligation Log",
-            totalEntries: totalSnaps,
-            viewingEntry: `${currentSnap + 1} of ${totalSnaps}`,
-            currentEntryDetails: {
-                code: currentGroup.code,
-                rowCount: currentGroup.data.length,
-                columnCount: currentGroup.headers.length,
-            }
-        };
-        updateContext(JSON.stringify(context, null, 2));
-    }
-    
-    updateCarouselContext();
-    api.on("select", updateCarouselContext);
-
-    return () => {
-        api.off("select", updateCarouselContext);
-    }
-  }, [api, groupedData, updateContext]);
-
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center">
@@ -191,13 +153,14 @@ export default function LigationLogPage() {
   return (
      <div className="w-full flex justify-center p-4 md:px-20">
         <div className="relative w-full max-w-5xl">
-          <div className="flex justify-center mb-4">
+          <div className="flex items-center justify-center gap-3 mb-4">
             <LogSearchCombobox
               items={groupedData.map((g, i) => ({ label: g.code, index: i }))}
               currentIndex={currentIndex}
               onSelect={(index) => api?.scrollTo(index)}
               placeholder="Search ligation entries..."
             />
+            <ExportLogButton logType="Ligation" />
           </div>
           <Carousel className="w-full" setApi={setApi} opts={{ align: "start", loop: false, startIndex }}>
             <CarouselContent>

@@ -1,152 +1,112 @@
 # Gene Synthesis Automations
 
-A full-stack lab data management app for gene synthesis workflows. Upload, parse, store, and interactively review laboratory logs (Ligation, Colony PCR, DNA Extraction, DNA Quantification) with rich plate visualizations and AI-assisted analysis.
+A local lab data application for viewing daily gene-synthesis logs, building Excel layouts, and connecting jobs to their experimental history. The interactive interface uses Next.js/React; Python handles file processing and DuckDB storage.
 
-## Tech Stack
+## Current scope — v0.0.5
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 15, React 19, TypeScript |
-| UI | Radix UI (shadcn/ui), Tailwind CSS, Embla Carousel |
-| Database | DuckDB (via Python) |
-| Data Processing | Python (openpyxl, pandas) |
-| AI | Google Genkit + Gemini 2.5 Flash |
-| Deployment | Firebase App Hosting |
+- **Gene Tracker:** searchable master job data, used as the spine for job relationships.
+- **Log review and upload:** Ligation, Colony PCR, DNA Extraction, and DNA Quantification, with tables, plate views, images, and carousel navigation.
+- **Sequencing:** preparation and analysis views with Python importers.
+- **Layout creation:** Ligation, Colony PCR, and extraction workbook generators, plus an interactive plate designer.
+- **Job data:** IDT/PCR fragments, primer add-ons and cross-references, reference-file previews, shipment/QC details, and clone/plasmid lineage data.
+- **Sample lookup:** a cross-stage search timeline. Some stages still match entry names rather than resolving the full sample lineage.
+- **Dashboard and developer tools:** database counts, SQL inspection, exports, and a widget playground.
+
+The Pipelines section remains a placeholder. There is no longer a separate Nanodrop page; Nanodrop parsing remains in the backend. Features are under active development and are not all covered by automated tests.
 
 ## Architecture
 
-```
-Next.js Frontend (React + Tailwind + Radix UI)
-        |
-   Server Actions
-   /      |       \
-ai.ts  logs.ts  database.ts
-          |
-   python-bridge.ts  (spawn wrapper, JSON IPC)
-          |
-      bridge.py  (unified Python entry point)
-      /       \
-  parsers/   db_ops.py
-      |          |
-  openpyxl     DuckDB
+```text
+Next.js / React interface
+        ↓
+Next.js server actions
+        ↓ JSON over subprocess stdin/stdout
+Python bridge → parsers / importers / layout generators
+        ↓
+DuckDB + local files / downloadable Excel workbooks
 ```
 
-- **Frontend** handles interactivity, animations, and drag-drop interactions
-- **Server Actions** (`src/app/actions/`) are split by domain: AI, logs, database, legacy
-- **Python bridge** (`python_tools/bridge.py`) handles all data-heavy work in a single subprocess per operation
-- **DuckDB** is the primary data store, with schema defined in `python_tools/schema.yaml`
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 15, React 19, TypeScript |
+| UI | Tailwind CSS, Radix/shadcn components, Embla Carousel |
+| Processing | Python, openpyxl, pandas |
+| Storage | DuckDB, local images and reference files |
+| Optional desktop shell | Electron in `_electron_sidecar/` |
 
-## Project Structure
+## Project map
 
-```
-src/
-  app/
-    actions/              # Server actions (split by domain)
-      ai.ts               # Chatbot + Excel summarization
-      logs.ts             # File parsing + persistence via Python bridge
-      database.ts         # DB init, export, SQL queries
-      python-bridge.ts    # Python subprocess wrapper
-      legacy.ts           # Deprecated Excel-based processing
-      index.ts            # Barrel re-export
-    (app)/                # App routes with shared sidebar layout
-      _context/           # React Context providers (App, Database)
-      home/               # Landing page
-      logs/               # Log viewer pages + uploader
-      plate-designer/     # Interactive plate layout designer
-      pipelines/          # Pipeline configurations
-      developer/          # Dev tools (DB inspector, widget playground)
-  ai/                     # Genkit AI flows
-  components/ui/          # shadcn/ui component library
-  lib/                    # Types, utilities, storage helpers
-  hooks/                  # Custom React hooks
-
-python_tools/
-  bridge.py               # Unified entry point for all Python operations
-  parsers/                # Excel parsers (ligation, colony_pcr, dna_extraction, dna_quantification)
-  db_ops.py               # DuckDB CRUD operations
-  schema.yaml             # Database schema definition
-  migrate_data.py         # Excel-to-DuckDB migration utility
-
-scripts/
-  process_data.py         # Data processing scripts
-  adapters/               # Placeholder for BBI_projects Python app integrations
-
-data/
-  GeneSyn_db.duckdb       # DuckDB database file
-  images/                 # Stored plate images by log type
+```text
+src/app/(app)/        Pages, shared navigation, database context
+  logs/              Experimental and sequencing log views, uploader
+  layouts/           Ligation, Colony PCR, extraction generators
+  plate-designer/    Interactive plate editor
+  fragments/         Fragment browser
+  reference-files/   Reference metadata and previews
+  shipping-qc/       Job, shipment, and QC views
+  search/            Sample lookup timeline
+  developer/         Database tools and component playground
+src/app/actions/     Logs, database, layouts, job web, lookup, dashboard,
+                     and Python subprocess wrapper
+python_tools/        Bridge, parsers, imports, layout generation, schema
+python_tools/templates/  Excel output templates
+data/                GeneSyn_db.duckdb and supporting files/images
+0-Logs/              Source laboratory files
+_electron_sidecar/   Electron launcher and packaging scripts
+docs/                Historical plans (some descriptions are outdated)
 ```
 
-## Getting Started
+`gene_tracker_data` is the job spine; `job_log_rows` is a view over it. Schema objects are defined both in `python_tools/schema.yaml` and specialized import modules.
 
-### Prerequisites
+## Local setup
 
-- Node.js 20+
-- Python 3.10+ with `duckdb`, `pandas`, `openpyxl`, `pyyaml`
-- A Google AI API key (for Genkit/Gemini features)
+Install Node.js 20+ and Python 3.10+ with pip. Run commands from the repository root. On Windows, the bridge invokes `python`, so the selected environment must put that executable on PATH.
 
-### Installation
-
-```bash
-# Install Node dependencies
-npm install
-
-# Install Python dependencies
-pip install duckdb pandas openpyxl pyyaml
-
-# Set up environment variables
-# Create .env.local with:
-#   GOOGLE_GENAI_API_KEY=your_key_here
+```powershell
+npm ci
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install duckdb pandas openpyxl pyyaml pillow
 ```
 
-### Running
+Pillow supports embedded workbook images. On macOS/Linux, create the environment with `python3 -m venv .venv` and activate it with `source .venv/bin/activate`.
 
-```bash
-# Development server (port 9002)
+### Start when ready
+
+```powershell
 npm run dev
+```
 
-# Genkit AI dev server (optional, for AI flow testing)
-npm run genkit:dev
+Open http://localhost:9002 manually. Keep the Python environment active in the terminal that launches Node.
 
-# Production build
-npm run build
+For a production build on Windows PowerShell:
+
+```powershell
+$env:NODE_ENV = 'production'
+npx next build
 npm start
 ```
 
-### Initialize Database
+The root `npm run build` script uses POSIX environment-variable syntax; use the explicit PowerShell commands above on Windows. `npm start` normally serves on port 3000.
 
-On first run, the database initializes automatically when data is first uploaded. To manually initialize:
+### Data and another computer
 
-```bash
-cd python_tools
-python db_ops.py init
-```
+Keep a backup of `data/GeneSyn_db.duckdb` before imports or migrations. To reproduce the current populated application on another computer, bring the required database, images, templates, and source/reference files in addition to the code. Some import defaults and stored file paths refer to the original machine; adjust them before relying on imports or previews.
 
-## Features
+The generic schema initializer does not populate historical data or establish every specialized job-web object. Do not treat a fresh empty database as equivalent to the populated development database.
 
-### Log Management
-- **Upload & Parse** -- Drag-and-drop Excel files for Ligation, Colony PCR, DNA Extraction, and DNA Quantification logs
-- **Interactive Review** -- Carousel-based navigation through log entries with plate grids, sample tables, and result images
-- **DuckDB Storage** -- All parsed data persisted in a local DuckDB database
+## Optional Electron launcher
 
-### Plate Designer
-- Drag-and-drop sample placement on 96-well and 48-well plates
-- Parameter management (antibiotic, temperature, bacteria, incubation, prep)
-- Bulk well selection and parameter application
+The desktop shell uses a Next.js standalone build and bundled Node/Python runtimes. It locates a checkout using `GSA_REPO_ROOT` or nearby folders, then normally serves on `127.0.0.1:4177`. The executable still requires the checkout, build, and data; it is not a self-contained data package.
 
-### AI Assistant
-- Context-aware chatbot that understands the current page and data state
-- Excel file summarization via Gemini
+See [`_electron_sidecar/BUILD.md`](_electron_sidecar/BUILD.md) for packaging background. That document contains older version/AI references and should be checked against the current scripts. Electron is not required to run the application in a browser.
 
-### Developer Tools
-- SQL query sandbox against the DuckDB database
-- Data export to Excel and ZIP backup
-- Widget playground for component testing
+## Development status
 
-## Log Types
+- Electron release version is `0.0.5`; the root package still has the generic `nextn` / `0.1.0` metadata.
+- Run `npm run typecheck` separately: production build configuration currently ignores TypeScript and ESLint errors.
+- The October 5, 2026 baseline check found stale generated `.next` route types and calendar component typing errors. A clean build may refresh route types; the calendar issue needs a source fix.
+- Layout job-eligibility filtering and full relational sample lookup need follow-up verification.
+- Existing planning documents include completed ideas still marked pending; consult the current code before selecting work.
 
-| Log Type | Excel Format | Key Data |
-|----------|-------------|----------|
-| Ligation | Sheet "Plate Name", cols A-W | Vectors, inserts, enzymes, well positions |
-| Colony PCR | Sheets "Plate 1", "Plate 2", ... | 96-well grid results, sample metadata, positive wells, gel images |
-| DNA Extraction | Sheet "Layout", ranges B5:G12 + J5:O12 | 48-well plate layouts with growth parameters |
-| DNA Quantification | First sheet, cols B-G | Concentration data by source type |
+Development proceeds in small workflow-focused increments. Validate generated workbooks and database relationships with representative test data before depending on a changed workflow.

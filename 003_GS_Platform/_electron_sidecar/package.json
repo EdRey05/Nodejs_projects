@@ -1,0 +1,60 @@
+{
+  "name": "gene-synthesis-automations-desktop",
+  "productName": "Gene Synthesis Automations",
+  "version": "0.0.5",
+  "private": true,
+  "description": "Electron desktop shell for the Gene Synthesis Automations Next.js app (portable, bundled Node + Python runtimes).",
+  "main": "electron/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "build:runtime": "node scripts/fetch-node.js",
+    "build:python": "powershell -NoProfile -ExecutionPolicy Bypass -File runtime/build_python.ps1",
+    "package:win": "electron-builder --win portable --x64",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.edrey05.gene-synthesis-automations",
+    "productName": "Gene Synthesis Automations",
+    "copyright": "Copyright (c) 2026 EdRey05",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "runtime",
+        "to": "runtime",
+        "filter": [
+          "node/**/*",
+          "python/**/*",
+          "*.md"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Gene_Synthesis_Automations-${version}-${arch}.${ext}"
+    },
+    "portable": {
+      "unpackDirName": "GSA-Portable"
+    }
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
+  }
+}

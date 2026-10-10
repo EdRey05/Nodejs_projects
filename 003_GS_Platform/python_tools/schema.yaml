@@ -166,3 +166,114 @@ dna_quantification:
     - {name: a260_a230, type: REAL}
     - {name: a260, type: REAL}
     - {name: a280, type: REAL}
+
+sequencing_layout:
+  index:
+    - {name: name, type: TEXT}
+    - {name: id, type: INTEGER, primary_key: true}
+    - {name: source, type: TEXT}
+  data:
+    - {name: sequencing_layout_id, type: INTEGER}
+    - {name: row_number, type: INTEGER}
+    - {name: well, type: TEXT}
+    - {name: wo, type: TEXT}
+    - {name: dna, type: TEXT}
+    - {name: primer, type: TEXT}
+    - {name: file_name, type: TEXT}
+  plate:
+    - {name: sequencing_layout_id, type: INTEGER}
+    - {name: row_letter, type: TEXT}
+    - {name: col, type: INTEGER}
+    - {name: field, type: TEXT}
+    - {name: value, type: TEXT}
+
+sequencing_order:
+  index:
+    - {name: name, type: TEXT}
+    - {name: id, type: INTEGER, primary_key: true}
+    - {name: source, type: TEXT}
+    - {name: plate_name, type: TEXT}
+  data:
+    - {name: sequencing_order_id, type: INTEGER}
+    - {name: row_number, type: INTEGER}
+    - {name: well_pos, type: TEXT}
+    - {name: sample_type, type: TEXT}
+    - {name: seq_sample_id, type: TEXT}
+    - {name: seq_primer_id, type: TEXT}
+    - {name: file_name_request, type: TEXT}
+    - {name: conc_est, type: TEXT}
+    - {name: comment, type: TEXT}
+    - {name: dna_position, type: TEXT}
+    - {name: layout_wo, type: TEXT}
+    - {name: new_primer_id, type: TEXT}
+    - {name: new_file_name, type: TEXT}
+
+sequencing_validation:
+  index:
+    - {name: name, type: TEXT}
+    - {name: id, type: INTEGER, primary_key: true}
+    - {name: source, type: TEXT}
+  pending:
+    - {name: sequencing_validation_id, type: INTEGER}
+    - {name: row_number, type: INTEGER}
+    - {name: jobid, type: TEXT}
+    - {name: bbid, type: TEXT}
+    - {name: plasmid_id, type: TEXT}
+    - {name: notes, type: TEXT}
+    - {name: ng_ul, type: TEXT}
+    - {name: a260_280, type: TEXT}
+    - {name: a260_230, type: TEXT}
+    - {name: seq_rx, type: TEXT}
+    - {name: seq_plate_well, type: TEXT}
+  dilution:
+    - {name: sequencing_validation_id, type: INTEGER}
+    - {name: row_number, type: INTEGER}
+    - {name: jobid, type: TEXT}
+    - {name: bbid, type: TEXT}
+    - {name: plasmid_id, type: TEXT}
+    - {name: seq_rx, type: TEXT}
+    - {name: seq_plate_well, type: TEXT}
+    - {name: conc, type: TEXT}
+    - {name: dil_fact, type: TEXT}
+    - {name: vol_to_prepare, type: TEXT}
+    - {name: water_vol, type: TEXT}
+    - {name: dna_vol, type: TEXT}
+
+seq_log:
+  index:
+    - {name: name, type: TEXT}
+    - {name: id, type: INTEGER, primary_key: true}
+    - {name: log_date, type: TEXT}
+    - {name: version, type: TEXT}
+    - {name: source, type: TEXT}
+  data:
+    - {name: seq_log_id, type: INTEGER}
+    - {name: row_number, type: INTEGER}
+    - {name: folder_name, type: TEXT}
+    - {name: job_id, type: TEXT}
+    - {name: vector_id, type: TEXT}
+    - {name: sg_ss_ok, type: TEXT}
+    - {name: sg_ds_ok, type: TEXT}
+    - {name: sg_mutation_or_fail, type: TEXT}
+    - {name: sg_primer_to_repeat, type: TEXT}
+    - {name: requirement, type: TEXT}
+    - {name: qc_file_name, type: TEXT}
+    - {name: work_no, type: TEXT}
+    - {name: bbi_id, type: TEXT}
+    - {name: gene_name, type: TEXT}
+    - {name: vector, type: TEXT}
+    - {name: length_bp, type: TEXT}
+    - {name: plasmid_no, type: TEXT}
+    - {name: cloning_site, type: TEXT}
+    - {name: resistance, type: TEXT}
+    - {name: growth_condition_temperature, type: TEXT}
+    - {name: order_date, type: TEXT}
+    - {name: delivery_date, type: TEXT}
+    - {name: storage, type: TEXT}
+    - {name: host, type: TEXT}
+    - {name: plasmid_qty, type: TEXT}
+    - {name: competent_cells, type: TEXT}
+    - {name: od260, type: TEXT}
+    - {name: od280, type: TEXT}
+    - {name: od260_280, type: TEXT}
+    - {name: ng_ul, type: TEXT}

@@ -338,11 +338,13 @@ export default function LogUploaderPage() {
             additionalData.sourceDetails = { extractionEntry: sourceExtractionEntry };
         }
 
-        // Build images map with entry code keys for Colony PCR
+        // Build images map with "<entryCode>_P<plate>" keys for Colony PCR
+        // (plate 1-based, matching the DB plate_id; stored files become
+        // entryCode_Pplate_Img.ext, e.g. U0102-ColonyPCR-FL_P1_I1.png)
         const imagesToSave: Record<string, string[]> = {};
         if (logType === 'Colony PCR') {
           Object.keys(plateImages).forEach(plateId => {
-            const key = `${entryCode}_${plateId}`;
+            const key = `${entryCode}_P${plateId}`;
             if (plateImages[plateId]?.length > 0) imagesToSave[key] = plateImages[plateId];
           });
         }

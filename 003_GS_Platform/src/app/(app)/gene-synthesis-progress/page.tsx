@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText } from 'lucide-react';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { FileText, ArrowUpDown, ArrowUp, ArrowDown, Columns3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type GeneTrackerRow = Record<string, string>;
@@ -110,6 +111,24 @@ export default function GeneSynthesisProgressPage() {
     setActiveFilters(new Set(FILTER_DEFS.map(f => f.id)));
   };
 
+  // --- Sorting + column visibility (Phase 7) ---
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [visibleCols, setVisibleCols] = useState<Set<string>>(() => new Set(VISIBLE_COLUMNS.map(c => c.key)));
+
+  function toggleSort(key: string) {
+    setSortKey(prev => {
+      if (prev === key) {
+        if (sortDir === 'asc') { setSortDir('desc'); return key; }
+        setSortKey(null); setSortDir('asc'); return null; // third click clears
+      }
+      setSortDir('asc');
+      return key;
+    });
+  }
+
+  const shownColumns = VISIBLE_COLUMNS.filter(c => visibleCols.has(c.key));
+
   // Compute counts per category and filtered rows
   const { filteredData, categoryCounts } = useMemo(() => {
     if (!data) return { filteredData: [], categoryCounts: {} as Record<FilterCategory, number> };
@@ -129,6 +148,28 @@ export default function GeneSynthesisProgressPage() {
 
     return { filteredData: filtered, categoryCounts: counts };
   }, [data, activeFilters]);
+
+  // Gene Tracker rows are historical strings; numeric columns sort numerically
+  // when every non-empty value parses, string/empty-cell collation otherwise.
+  const shownData = useMemo(() => {
+    let rows = filteredData;
+    if (sortKey) {
+      const vals = rows.map(r => String(r[sortKey] ?? '').trim());
+      const numeric = vals.every(v => v === '' || !isNaN(Number(v.replace(/,/g, ''))));
+      const sorted = [...rows].sort((a, b) => {
+        const av = String(a[sortKey] ?? '').trim();
+        const bv = String(b[sortKey] ?? '').trim();
+        if (av === '' && bv === '') return 0;
+        if (av === '') return 1; // empties always sink
+        if (bv === '') return -1;
+        if (numeric) return Number(av.replace(/,/g, '')) - Number(bv.replace(/,/g, ''));
+        return av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' });
+      });
+      if (sortDir === 'desc') sorted.reverse();
+      rows = sorted;
+    }
+    return rows;
+  }, [filteredData, sortKey, sortDir]);
 
   if (!data || data.length === 0) {
     return (
@@ -178,6 +219,29 @@ export default function GeneSynthesisProgressPage() {
           <Button variant="ghost" size="sm" onClick={() => setActiveFilters(new Set(['in_progress', 'other']))}>
             Reset
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1">
+                <Columns3 className="h-4 w-4" /> Columns
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="max-h-80 overflow-auto">
+              {VISIBLE_COLUMNS.map(col => (
+                <DropdownMenuCheckboxItem
+                  key={col.key}
+                  checked={visibleCols.has(col.key)}
+                  onCheckedChange={(v) => setVisibleCols(prev => {
+                    const next = new Set(prev);
+                    if (v) next.add(col.key); else next.delete(col.key);
+                    // never hide every column
+                    return next.size === 0 ? prev : next;
+                  })}
+                >
+                  {col.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <span className="text-xs text-muted-foreground ml-auto">
             {filteredData.length} of {data.length} entries
           </span>
@@ -192,27 +256,35 @@ export default function GeneSynthesisProgressPage() {
               <TableHeader className="sticky top-0 z-10">
                 <TableRow className="bg-sidebar-accent hover:bg-sidebar-accent">
                   <TableHead className="whitespace-nowrap text-sidebar-foreground w-10">#</TableHead>
-                  {VISIBLE_COLUMNS.map(col => (
-                    <TableHead key={col.key} className="whitespace-nowrap text-sidebar-foreground">
-                      {col.label}
+                  {shownColumns.map(col => (
+                    <TableHead
+                      key={col.key}
+                      className={cn('whitespace-nowrap text-sidebar-foreground cursor-pointer select-none hover:text-foreground', sortKey === col.key && 'text-foreground')}
+                      onClick={(e) => { e.preventDefault(); toggleSort(col.key); }}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {col.label}
+                        {sortKey === col.key && (sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
+                        {sortKey !== col.key && <ArrowUpDown className="h-3 w-3 opacity-0 group-hover:opacity-40" />}
+                      </span>
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredData.length === 0 ? (
+                {shownData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={VISIBLE_COLUMNS.length + 1} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={shownColumns.length + 1} className="text-center py-8 text-muted-foreground">
                       No entries match the current filters.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredData.map((row, i) => {
+                  shownData.map((row, i) => {
                     const category = classifyProgress(row.synthesis_progress);
                     return (
                       <TableRow key={row.work_no || i} className="hover:bg-secondary">
                         <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
-                        {VISIBLE_COLUMNS.map(col => (
+                        {shownColumns.map(col => (
                           <TableCell key={col.key} className="whitespace-nowrap max-w-[300px] truncate">
                             {col.key === 'synthesis_progress' ? (
                               <Badge className={cn('font-normal', progressBadgeClass(category))}>

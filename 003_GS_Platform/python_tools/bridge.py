@@ -299,6 +299,133 @@ def action_db_clear(data: dict) -> dict:
     return {"status": "success"}
 
 
+def action_bulk_import(data: dict) -> dict:
+    """Bulk-import a folder of real-data files for one log type."""
+    from bulk_import import bulk_import as _bulk_import
+    return _bulk_import(data)
+
+
+def action_import_gene_tracker(data: dict) -> dict:
+    """Header-verified, work_no-based upsert of a Gene Tracker sheet."""
+    from bulk_import import import_gene_tracker as _import_gt
+    return _import_gt(data)
+
+
+def action_import_idt(data: dict) -> dict:
+    """Summary IDT Log v2 -> idt_fragments + pcr_fragments (P8 job web)."""
+    from job_web_import import import_idt as _imp
+    return _imp(data)
+
+
+def action_import_primer_addon(data: dict) -> dict:
+    """Primer Log input addon sheets -> primer_input_addon (P8 job web)."""
+    from job_web_import import import_primer_addon as _imp
+    return _imp(data)
+
+
+def action_import_reference_files(data: dict) -> dict:
+    """07 reference pMON*.txt walk -> reference_files (P8 job web)."""
+    from job_web_import import import_reference_files as _imp
+    return _imp(data)
+
+
+def action_import_file_inventory(data: dict) -> dict:
+    """05/08/09/13/14/15 walks -> file_inventory (P8 job web)."""
+    from job_web_import import import_file_inventory as _imp
+    return _imp(data)
+
+
+def action_import_shipment_qc(data: dict) -> dict:
+    """12 Shipment and QC Log -> shipment_rows + qc_rows (P8 job web)."""
+    from job_web_import import import_shipment_qc as _imp
+    return _imp(data)
+
+
+def action_read_reference_file(data: dict) -> dict:
+    """Capped 2 kB preview of a reference pMON*.txt (P8 /reference-files UI)."""
+    from job_web_import import read_reference_file as _imp
+    return _imp(data)
+
+
+def action_import_primer_xref(data: dict) -> dict:
+    """Primer *N slot -> sequence bridge (primer_xref + primer_sequences)."""
+    from job_web_import import import_primer_xref as _imp
+    return _imp(data)
+
+
+def action_ensure_job_web(data: dict) -> dict:
+    """Create canonical P8 tables (raw DDL) + job_log_rows view."""
+    from job_web_import import ensure_job_web_objects as _ensure
+    return {'status': 'success', 'created': _ensure()}
+
+
+def action_import_master_summary(data: dict) -> dict:
+    """Stream an Extraction Log 'summary' sheet into master_summary."""
+    from bulk_import import import_master_summary as _import_ms
+    return _import_ms(data)
+
+
+def action_import_vector_db(data: dict) -> dict:
+    """Import Vector_database.xlsx into the vector_db table."""
+    from foundations import import_vector_db
+    return import_vector_db(data)
+
+
+def action_lookup_vector(data: dict) -> dict:
+    """Find vector rows by name (+optional enzyme) in vector_db."""
+    from foundations import lookup_vector as _fn
+    return _fn(data)
+
+
+def action_list_templates(data: dict) -> dict:
+    """List shipped layout templates in python_tools/templates/."""
+    from foundations import list_templates as _fn
+    return _fn(data or {})
+
+
+def action_build_ligation_layout(data: dict) -> dict:
+    """Generate a Ligation Layout xlsx (pilot ligation_layout.py port)."""
+    from layouts import build_ligation_layout as _fn
+    return _fn(data)
+
+
+def action_import_primer_log(data: dict) -> dict:
+    """Primer Log 'input addon' -> primers table (drop+recreate)."""
+    from layouts import import_primer_log as _fn
+    return _fn(data)
+
+
+def action_fetch_primer_map(data: dict) -> dict:
+    """{job_id: primer_pair} mapping (primers table / Primer Log xlsx)."""
+    from layouts import fetch_primer_map as _fn
+    return _fn(data)
+
+
+def action_build_colony_pcr_layout(data: dict) -> dict:
+    """Colony PCR layout builder (pilot ColonyPCRLayout_app port)."""
+    from layouts import build_colony_pcr_layout as _fn
+    return _fn(data)
+
+
+def action_build_extraction_layout(data: dict) -> dict:
+    """Extraction layout builder from colony PCR positives (round-trips
+    the dna_extraction parser)."""
+    from layouts import build_extraction_layout as _fn
+    return _fn(data)
+
+
+def action_bulk_import_sequencing_prep(data: dict) -> dict:
+    """Walk 06-Sequencing prep project folders and import the three files."""
+    from seq_import import bulk_import_sequencing_prep as _fn
+    return _fn(data)
+
+
+def action_bulk_import_seq_logs(data: dict) -> dict:
+    """Walk a Gene Seq Log folder (request or results); latest version wins."""
+    from seq_import import bulk_import_seq_logs as _fn
+    return _fn(data)
+
+
 # Action dispatcher
 ACTIONS = {
     'parse': action_parse,
@@ -306,6 +433,27 @@ ACTIONS = {
     'fetch': action_fetch,
     'fetch_extraction_wells': action_fetch_extraction_wells,
     'fetch_gene_tracker': action_fetch_gene_tracker,
+    'bulk_import': action_bulk_import,
+    'import_gene_tracker': action_import_gene_tracker,
+    'import_master_summary': action_import_master_summary,
+    'import_vector_db': action_import_vector_db,
+    'lookup_vector': action_lookup_vector,
+    'list_templates': action_list_templates,
+    'build_ligation_layout': action_build_ligation_layout,
+    'import_primer_log': action_import_primer_log,
+    'fetch_primer_map': action_fetch_primer_map,
+    'build_colony_pcr_layout': action_build_colony_pcr_layout,
+    'build_extraction_layout': action_build_extraction_layout,
+    'bulk_import_sequencing_prep': action_bulk_import_sequencing_prep,
+    'bulk_import_seq_logs': action_bulk_import_seq_logs,
+    'import_idt': action_import_idt,
+    'import_primer_addon': action_import_primer_addon,
+    'import_reference_files': action_import_reference_files,
+    'import_file_inventory': action_import_file_inventory,
+    'import_shipment_qc': action_import_shipment_qc,
+    'read_reference_file': action_read_reference_file,
+    'import_primer_xref': action_import_primer_xref,
+    'ensure_job_web': action_ensure_job_web,
     'db_init': action_db_init,
     'db_export': action_db_export,
     'db_run_query': action_db_run_query,

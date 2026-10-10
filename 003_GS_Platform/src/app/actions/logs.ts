@@ -63,11 +63,11 @@ export async function processAndPersist(
             return { success: false, message: bridgeResult.message };
         }
 
-        // Save images (stays in TypeScript - file I/O, not data processing)
+        // Save images (stays in TypeScript - file I/O, not data processing).
+        // saveImages only replaces files for the entries present in `images`;
+        // other entries' files are left untouched.
         if (images && Object.keys(images).length > 0) {
-            const existingImages = await loadImages(logType);
-            const mergedImages = { ...existingImages, ...images };
-            await saveImages(logType, mergedImages);
+            await saveImages(logType, images);
         }
 
         // Load images for the response
@@ -130,6 +130,41 @@ export async function fetchGeneTracker(): Promise<{ success: boolean; data?: any
             return { success: false, message: bridgeResult.message };
         }
         return { success: true, data: bridgeResult.data };
+    } catch (e: any) {
+        return { success: false, message: e.message };
+    }
+}
+
+export async function fetchSeqPrep(): Promise<{ success: boolean; payload?: Record<string, any[]>; message?: string }> {
+    try {
+        const result = await runBridge({
+            action: "db_run_query",
+            sql: `
+                SELECT * FROM sequencing_layout_index ORDER BY id;
+            `,
+        }) as any;
+        if (!result.success) return { success: false, message: result.message || "Fetch failed." };
+        const layoutIndex = result.rows || [];
+        return { success: true, payload: { index: layoutIndex } };
+    } catch (e: any) {
+        return { success: false, message: e.message };
+    }
+}
+
+export async function fetchSequencingLogs(): Promise<{ success: boolean; payload?: Record<string, any[]>; message?: string }> {
+    try {
+        const result = await runBridge({
+            action: "db_run_query",
+            sql: `SELECT * FROM seq_log_index ORDER BY log_date`,
+        }) as any;
+        if (!result.success) return { success: false, message: result.message || "Fetch failed." };
+        const indexRows = result.rows || [];
+        const dataRes = await runBridge({
+            action: "db_run_query",
+            sql: `SELECT * FROM seq_log_data`,
+        }) as any;
+        if (!dataRes.success) return { success: false, message: dataRes.message || "Fetch failed." };
+        return { success: true, payload: { index: indexRows, data: dataRes.rows || [] } };
     } catch (e: any) {
         return { success: false, message: e.message };
     }

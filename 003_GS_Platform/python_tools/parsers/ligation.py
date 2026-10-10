@@ -1,6 +1,8 @@
 """Parser for Ligation Excel files.
 
-Reads sheet "Plate Name", range A1:W97. Filters rows that have Name or BBID.
+Reads sheet "Plate Name" (legacy) or "Layout" (newer U0417+ files), range
+A1:W97. Filters rows that have Name or BBID. Newer 'Layout' files carry
+renamed headers which are normalized onto the legacy names below.
 Returns { success, message, data: [{header: value, ...}], headers: [str] }.
 """
 
@@ -12,9 +14,13 @@ def parse(file_bytes: bytes) -> dict:
         from io import BytesIO
         wb = openpyxl.load_workbook(BytesIO(file_bytes), data_only=True)
 
-        sheet_name = 'Plate Name'
-        if sheet_name not in wb.sheetnames:
-            return {"success": False, "message": f'Sheet "{sheet_name}" not found.'}
+        # v0.0.5 Phase 1: 2026_pilot files from U0417 onward renamed the sheet
+        # to 'Layout'. Accept both; prefer the legacy 'Plate Name'.
+        sheet_name = next(
+            (s for s in ('Plate Name', 'Layout') if s in wb.sheetnames), None
+        )
+        if sheet_name is None:
+            return {"success": False, "message": 'Neither "Plate Name" nor "Layout" sheet found.'}
 
         ws = wb[sheet_name]
 
@@ -27,6 +33,21 @@ def parse(file_bytes: bytes) -> dict:
             return {"success": False, "message": "No data rows found."}
 
         original_headers = rows[0]
+
+        # v0.0.5 Phase 1: newer 'Layout' files renamed columns; map renames
+        # onto the legacy names the schema (ligation_data) and viewers expect.
+        # Additive — legacy files carry none of these header strings.
+        header_aliases = {
+            'Work No.': 'Name',
+            'BBI ID': 'BBID',
+            'Vector LOT': 'Vector Lot',
+            'Length (bp)': 'Len',
+        }
+        original_headers = [
+            header_aliases.get(h, h) if isinstance(h, str) else h
+            for h in original_headers
+        ]
+
         headers = [str(h) for h in original_headers if h is not None and str(h).strip() != '']
 
         data_rows = rows[1:]

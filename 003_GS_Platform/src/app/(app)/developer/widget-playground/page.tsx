@@ -8,7 +8,6 @@ import { SamplePalette } from "./_components/sample-palette";
 import { ControlPanel } from "./_components/control-panel";
 import { ExcelManager } from "./_components/excel-manager";
 import { Separator } from "@/components/ui/separator";
-import { useAppContext } from "../../_context/AppContext";
 
 const initialSamples: SampleType[] = [
   { id: "s1", name: "S1", color: "bg-red-500" },
@@ -21,7 +20,6 @@ const initialSamples: SampleType[] = [
 type DraggedItem = { type: 'sample', item: SampleType } | { type: 'well', item: { wellId: string, sampleId: string, plateId: 'plate96' | 'plate48' } };
 
 export default function WidgetPlaygroundPage() {
-  const { updateContext } = useAppContext();
   const [plate96Data, setPlate96Data] = useState<PlateData>(() => generatePlateData(8, 12));
   const [plate48Data, setPlate48Data] = useState<PlateData>(() => generatePlateData(8, 6));
   const [selectedWells, setSelectedWells] = useState<Set<string>>(new Set());
@@ -32,16 +30,6 @@ export default function WidgetPlaygroundPage() {
       ...Object.values(plate96Data).filter(w => w.sample).map(w => w.sample!.id),
       ...Object.values(plate48Data).filter(w => w.sample).map(w => w.sample!.id)
   ]);
-
-  useEffect(() => {
-    const context = {
-      page: "Widget Playground",
-      selectedWells: Array.from(selectedWells),
-      plate96Status: Object.values(plate96Data).filter(w => w.sample || Object.keys(w.params).length > 0),
-      plate48Status: Object.values(plate48Data).filter(w => w.sample || Object.keys(w.params).length > 0),
-    };
-    updateContext(JSON.stringify(context, null, 2));
-  }, [plate96Data, plate48Data, selectedWells, updateContext]);
 
   const updatePlateData = (
     plateSetter: React.Dispatch<React.SetStateAction<PlateData>>,

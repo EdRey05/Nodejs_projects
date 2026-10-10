@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AppIcon } from '@/components/icons';
-import { FlaskConical, User, Settings, Home, GitFork, Wrench, Code, FileText, ChevronsUpDown, UploadCloud, Hash } from 'lucide-react';
+import { FlaskConical, User, Settings, Home, GitFork, Wrench, Code, FileText, ChevronsUpDown, UploadCloud, Hash, ClipboardList, Dna, PackageCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -30,16 +30,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Chatbot } from '@/components/chatbot';
-import { AppContextProvider, useAppContext } from './_context/AppContext';
 import { DatabaseContextProvider, useDatabase } from './_context/DatabaseContext';
 import { LOG_TYPES, LogType } from '@/lib/types';
-import { fetchPersistedData, fetchGeneTracker } from '@/app/actions';
+import { fetchPersistedData, fetchGeneTracker, fetchSeqPrep, fetchSequencingLogs } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { getAppContext } = useAppContext();
   const { setDatabase } = useDatabase();
   const { toast } = useToast();
   const [isFetching, startFetching] = useTransition();
@@ -53,6 +50,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         'dna-extraction': 'DNA Extraction Log',
         'dna-quantification': 'DNA Quantification Log',
         'gene-synthesis-progress': 'Gene Tracker',
+        'sequencing-prep': 'Sequencing Prep',
+        'sequencing-analysis': 'Sequencing Analysis',
       };
   
       if (specialTitles[segment]) {
@@ -93,6 +92,28 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               buffer: null,
               name: 'DuckDB: Gene Tracker',
               payload: { data: result.data },
+            });
+          }
+        })(),
+        // Sequencing prep (06-Sequencing prep trio)
+        (async () => {
+          const result = await fetchSeqPrep();
+          if (result.success && result.payload) {
+            setDatabase('Sequencing Prep', {
+              buffer: null,
+              name: 'DuckDB: Sequencing Prep',
+              payload: result.payload,
+            });
+          }
+        })(),
+        // Sequencing analysis logs (10/11 Gene Seq Logs)
+        (async () => {
+          const result = await fetchSequencingLogs();
+          if (result.success && result.payload) {
+            setDatabase('Sequencing Analysis', {
+              buffer: null,
+              name: 'DuckDB: Sequencing Analysis',
+              payload: result.payload,
             });
           }
         })(),
@@ -159,6 +180,69 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               </SidebarMenuItem>
             </Collapsible>
 
+            <Collapsible asChild>
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton asChild isActive={pathname === '/search'}>
+                    <Link href="/search" className="flex w-full items-center">
+                      <Hash />
+                      <span>Sample Lookup</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+              </SidebarMenuItem>
+            </Collapsible>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/fragments'}>
+                <Link href="/fragments" className="flex w-full items-center">
+                  <Dna />
+                  <span>IDT Fragments</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/reference-files'}>
+                <Link href="/reference-files" className="flex w-full items-center">
+                  <FileText />
+                  <span>Reference Files</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/shipping-qc'}>
+                <Link href="/shipping-qc" className="flex w-full items-center">
+                  <PackageCheck />
+                  <span>Shipping &amp; QC</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <Collapsible asChild>
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton>
+                    <ClipboardList />
+                    <span>Layouts</span>
+                    <ChevronsUpDown className="ml-auto h-4 w-4" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === '/layouts/ligation'}><Link href="/layouts/ligation">Ligation</Link></SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === '/layouts/colony-pcr'}><Link href="/layouts/colony-pcr">Colony PCR</Link></SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === '/layouts/extraction'}><Link href="/layouts/extraction">Extraction</Link></SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+
             <Collapsible asChild defaultOpen>
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
@@ -184,6 +268,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild isActive={pathname === '/logs/dna-quantification'}><Link href="/logs/dna-quantification">DNA Quantification</Link></SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === '/logs/sequencing-prep'}><Link href="/logs/sequencing-prep">Sequencing Prep</Link></SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === '/logs/sequencing-analysis'}><Link href="/logs/sequencing-analysis">Sequencing Analysis</Link></SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>
                 </CollapsibleContent>
@@ -250,17 +340,14 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </SidebarInset>
-      <Chatbot getAppContext={getAppContext} />
     </SidebarProvider>
   );
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AppContextProvider>
-      <DatabaseContextProvider>
+    <DatabaseContextProvider>
         <LayoutContent>{children}</LayoutContent>
-      </DatabaseContextProvider>
-    </AppContextProvider>
+    </DatabaseContextProvider>
   );
 }

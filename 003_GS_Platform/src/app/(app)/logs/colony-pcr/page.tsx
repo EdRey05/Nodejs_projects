@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { useDatabase } from '../../_context/DatabaseContext';
-import { useAppContext } from '../../_context/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from '@/components/ui/carousel';
@@ -13,6 +12,8 @@ import type { PlateData, WellData } from '@/lib/types';
 import { ColonyPcrGrid } from '../uploader/_components/colony-pcr-grid';
 import { Button } from '@/components/ui/button';
 import { LogSearchCombobox } from '@/components/ui/log-search-combobox';
+import { ExportLogButton } from '@/components/export-log-button';
+import { useCarouselArrows } from '@/hooks/use-carousel-arrows';
 
 type ParsedPlateData = {
   plateId: string;
@@ -34,9 +35,9 @@ const NOOP = () => {};
 
 export default function ColonyPcrLogPage() {
   const { databases } = useDatabase();
-  const { updateContext } = useAppContext();
   const [isLoading, setIsLoading] = useState(true);
   const [api, setApi] = useState<CarouselApi>();
+  useCarouselArrows(api);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -95,7 +96,7 @@ export default function ColonyPcrLogPage() {
             ? Object.keys(samplesData[0]).filter(h => h !== idColName && h !== 'plate_id')
             : [];
 
-          const imageKey = `${indexEntry.name}_${plateId}`;
+          const imageKey = `${indexEntry.name}_P${plateId}`;
           const images = db.images?.[imageKey] || [];
 
           return { plateId: String(plateId), gridData: plateData, positiveWells, samplesData, samplesHeaders, images };
@@ -112,45 +113,6 @@ export default function ColonyPcrLogPage() {
   useEffect(() => {
     setIsLoading(false);
   }, [groupedData]);
-
-  useEffect(() => {
-    if (!api) return;
-
-    const updateCarouselContext = () => {
-        if (!groupedData || groupedData.length === 0) {
-            updateContext(JSON.stringify({ page: "Colony PCR Log", status: "No data loaded." }, null, 2));
-            return;
-        }
-
-        const currentSnap = api.selectedScrollSnap();
-        setCurrentIndex(currentSnap);
-        const totalSnaps = api.scrollSnapList().length;
-        const currentGroup = groupedData[currentSnap];
-
-        if (!currentGroup) return;
-
-        const context = {
-            page: "Colony PCR Log",
-            totalEntries: totalSnaps,
-            viewingEntry: `${currentSnap + 1} of ${totalSnaps}`,
-            currentEntryDetails: {
-                code: currentGroup.code,
-                plateCount: currentGroup.plates.length,
-                plates: currentGroup.plates.map(p => ({
-                    plateId: p.plateId,
-                    positiveCount: p.positiveWells.size,
-                    sampleCount: p.samplesData.length,
-                    imageCount: p.images.length,
-                }))
-            }
-        };
-        updateContext(JSON.stringify(context, null, 2));
-    }
-
-    updateCarouselContext();
-    api.on("select", updateCarouselContext);
-    return () => { api.off("select", updateCarouselContext) };
-  }, [api, groupedData, updateContext]);
 
   if (isLoading) {
     return (
@@ -195,13 +157,14 @@ export default function ColonyPcrLogPage() {
         </DialogContent>
       </Dialog>
       <div className="relative w-full max-w-5xl px-12">
-        <div className="flex justify-center mb-4">
+        <div className="flex items-center justify-center gap-3 mb-4">
           <LogSearchCombobox
             items={groupedData.map((g, i) => ({ label: g.code, index: i }))}
             currentIndex={currentIndex}
             onSelect={(index) => api?.scrollTo(index)}
             placeholder="Search colony PCR entries..."
           />
+          <ExportLogButton logType="Colony PCR" />
         </div>
         <Carousel className="w-full" setApi={setApi} opts={{ align: "start", loop: false, startIndex }}>
           <CarouselContent className="-ml-4">
