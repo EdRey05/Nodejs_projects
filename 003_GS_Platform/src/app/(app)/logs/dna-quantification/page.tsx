@@ -44,7 +44,8 @@ export default function DnaQuantificationLogPage() {
             for (const entry of indexData) {
                 const entryId = entry.id;
                 const modeKey = entry.source === 'Extraction Plate' ? 'extraction_plate' :
-                             entry.source === 'Fragments' ? 'fragments' : 'other';
+                             entry.source === 'Fragments' ? 'fragments' :
+                             entry.source === 'Nanodrop CSV' ? 'nanodrop' : 'other';
 
                 const modeData = payload[modeKey];
                 if (!modeData) continue;
@@ -84,7 +85,8 @@ export default function DnaQuantificationLogPage() {
         for (const entry of indexData) {
             const entryId = entry.id;
             const mode = entry.source === 'Extraction Plate' ? 'ExtractionPlate' :
-                         entry.source === 'Fragments' ? 'Fragments' : 'Other';
+                         entry.source === 'Fragments' ? 'Fragments' :
+                         entry.source === 'Nanodrop CSV' ? 'Nanodrop' : 'Other';
             
             const modeSheet = workbook.Sheets[mode];
             if (!modeSheet) continue;

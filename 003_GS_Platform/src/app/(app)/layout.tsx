@@ -34,7 +34,7 @@ import { Chatbot } from '@/components/chatbot';
 import { AppContextProvider, useAppContext } from './_context/AppContext';
 import { DatabaseContextProvider, useDatabase } from './_context/DatabaseContext';
 import { LOG_TYPES, LogType } from '@/lib/types';
-import { fetchPersistedData } from '@/app/actions';
+import { fetchPersistedData, fetchGeneTracker } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
@@ -52,7 +52,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         'colony-pcr': 'Colony PCR Log',
         'dna-extraction': 'DNA Extraction Log',
         'dna-quantification': 'DNA Quantification Log',
-        'nanodrop': 'Nanodrop Log',
         'gene-synthesis-progress': 'Gene Tracker',
       };
   
@@ -69,21 +68,35 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   const loadInitialData = useCallback(() => {
     startFetching(async () => {
-      await Promise.all(LOG_TYPES.map(async (logType) => {
-        const result = await fetchPersistedData(logType);
-        if (result.success) {
-          if (result.isJson) {
-            setDatabase(logType, {
+      await Promise.all([
+        // Load all log types
+        ...LOG_TYPES.map(async (logType) => {
+          const result = await fetchPersistedData(logType);
+          if (result.success) {
+            if (result.isJson) {
+              setDatabase(logType, {
+                buffer: null,
+                name: `DuckDB: ${logType}`,
+                payload: result.payload,
+                images: result.images
+              });
+            }
+          } else if (result.message !== "No persisted data found." && result.message !== "No persisted data found in DuckDB.") {
+            toast({ variant: 'destructive', title: 'Initial Load Failed', description: `Could not load ${logType}: ${result.message}` });
+          }
+        }),
+        // Load Gene Tracker data
+        (async () => {
+          const result = await fetchGeneTracker();
+          if (result.success && result.data) {
+            setDatabase('Gene Tracker', {
               buffer: null,
-              name: `DuckDB: ${logType}`,
-              payload: result.payload,
-              images: result.images
+              name: 'DuckDB: Gene Tracker',
+              payload: { data: result.data },
             });
           }
-        } else if (result.message !== "No persisted data found." && result.message !== "No persisted data found in DuckDB.") {
-          toast({ variant: 'destructive', title: 'Initial Load Failed', description: `Could not load ${logType}: ${result.message}` });
-        }
-      }));
+        })(),
+      ]);
     });
   }, [setDatabase, startFetching, toast]);
 
@@ -171,9 +184,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild isActive={pathname === '/logs/dna-quantification'}><Link href="/logs/dna-quantification">DNA Quantification</Link></SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === '/logs/nanodrop'}><Link href="/logs/nanodrop">Nanodrop</Link></SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>
                 </CollapsibleContent>

@@ -83,13 +83,14 @@ export const DNA_EXTRACTION_TEMPERATURE_BORDERS: { [key: string]: string } = {
     "16-20°C": "border-dotted",
 };
 
-export const LOG_TYPES = ["Ligation", "Colony PCR", "DNA Extraction", "DNA Quantification", "Nanodrop"] as const;
+export const LOG_TYPES = ["Ligation", "Colony PCR", "DNA Extraction", "DNA Quantification"] as const;
 export type LogType = typeof LOG_TYPES[number];
 
 export const DNA_QUANTIFICATION_SOURCES = [
     "Extraction Plate",
     "Fragments",
-    "Other (for SEQ/QC)"
+    "Other (for SEQ/QC)",
+    "Nanodrop CSV"
 ] as const;
 export type DnaQuantificationSource = typeof DNA_QUANTIFICATION_SOURCES[number];
 

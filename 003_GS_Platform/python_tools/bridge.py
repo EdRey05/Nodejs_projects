@@ -25,12 +25,18 @@ def _log_type_key(log_type: str) -> str:
 
 
 def action_parse(data: dict) -> dict:
-    """Parse an Excel file and return preview data."""
+    """Parse an Excel/CSV file and return preview data."""
     log_type = _log_type_key(data['log_type'])
+    source_mode = data.get('source_mode', '')
     file_base64 = data['file_base64']
     file_bytes = base64.b64decode(file_base64)
 
-    parser = PARSERS.get(log_type)
+    # Route Nanodrop CSV to its dedicated parser
+    if log_type == 'dna_quantification' and source_mode == 'Nanodrop CSV':
+        parser = PARSERS.get('nanodrop')
+    else:
+        parser = PARSERS.get(log_type)
+
     if not parser:
         return {"success": False, "message": f"No parser found for log type: {log_type}"}
 
@@ -60,8 +66,13 @@ def action_parse_and_persist(data: dict) -> dict:
     # Get next ID
     new_id = db_ops.get_next_id(log_type, 'index')
 
-    # Parse the file
-    parser = PARSERS.get(log_type)
+    # Parse the file (route Nanodrop CSV to its dedicated parser)
+    source_mode = additional_data.get('sourceMode', '')
+    if log_type == 'dna_quantification' and source_mode == 'Nanodrop CSV':
+        parser = PARSERS.get('nanodrop')
+    else:
+        parser = PARSERS.get(log_type)
+
     if not parser:
         return {"success": False, "message": f"No parser found for log type: {log_type}"}
 
@@ -76,8 +87,6 @@ def action_parse_and_persist(data: dict) -> dict:
     if log_type == 'dna_quantification':
         index_entry["source"] = additional_data.get('sourceMode', 'Unknown')
         index_entry["source_details"] = json.dumps(additional_data.get('sourceDetails', {}))
-    elif log_type == 'nanodrop':
-        index_entry["extraction_entry"] = additional_data.get('extractionEntry', '')
     db_ops.insert_data(log_type, 'index', [index_entry])
 
     # Insert data based on log type
@@ -167,14 +176,11 @@ def action_parse_and_persist(data: dict) -> dict:
         mode_table = {
             'Extraction Plate': 'extraction_plate',
             'Fragments': 'fragments',
+            'Nanodrop CSV': 'nanodrop',
         }.get(additional_data.get('sourceMode', ''), 'other')
 
         rows = [{'quantification_id': new_id, **row} for row in parse_result['data']]
         db_ops.insert_data(log_type, mode_table, rows)
-
-    elif log_type == 'nanodrop':
-        rows = [{'nanodrop_id': new_id, **row} for row in parse_result['data']]
-        db_ops.insert_data(log_type, 'data', rows)
 
     # Return fresh payload
     payload = _fetch_all_tables(log_type)
@@ -214,7 +220,7 @@ def _fetch_all_tables(log_type: str) -> dict:
         for table in ['antibiotic', 'temperature', 'bacteria', 'incubation', 'prep']:
             payload[table] = db_ops.query_data(log_type, table) or []
     elif log_type == 'dna_quantification':
-        for table in ['extraction_plate', 'fragments', 'other']:
+        for table in ['extraction_plate', 'fragments', 'other', 'nanodrop']:
             payload[table] = db_ops.query_data(log_type, table) or []
 
     return payload

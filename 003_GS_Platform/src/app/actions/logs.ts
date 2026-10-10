@@ -4,7 +4,7 @@ import { LogType, ParseResult, FetchResult } from "@/lib/types";
 import { saveImages, loadImages } from "@/lib/storage";
 import { runBridge } from "./python-bridge";
 
-export async function previewFile(logType: LogType, fileBuffer: ArrayBuffer): Promise<ParseResult> {
+export async function previewFile(logType: LogType, fileBuffer: ArrayBuffer, sourceMode?: string): Promise<ParseResult> {
     try {
         const logTypeKey = logType.toLowerCase().replace(/ /g, '_');
         const fileBase64 = Buffer.from(fileBuffer).toString('base64');
@@ -13,6 +13,7 @@ export async function previewFile(logType: LogType, fileBuffer: ArrayBuffer): Pr
             action: 'parse',
             log_type: logTypeKey,
             file_base64: fileBase64,
+            ...(sourceMode ? { source_mode: sourceMode } : {}),
         }) as any;
 
         if (!result.success) {

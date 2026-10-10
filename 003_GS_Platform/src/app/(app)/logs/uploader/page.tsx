@@ -41,7 +41,6 @@ export default function LogUploaderPage() {
   const [dnaExtractionPlates, setDnaExtractionPlates] = useState<DnaExtractionPlate[] | null>(null);
   const [dnaQuantificationPreview, setDnaQuantificationPreview] = useState<{ data: any[], headers: string[] } | null>(null);
   const [nanodropPreviewData, setNanodropPreviewData] = useState<any[] | null>(null);
-  const [nanodropExtractionEntry, setNanodropExtractionEntry] = useState<string>('');
 
   // Quantification states
   const [quantSource, setQuantSource] = useState<DnaQuantificationSource | null>(null);
@@ -99,7 +98,6 @@ export default function LogUploaderPage() {
     setSourceExtractionEntry('');
     setPreparedQuantTable(null);
     setNanodropPreviewData(null);
-    setNanodropExtractionEntry('');
     const fileInput = document.getElementById('log-file') as HTMLInputElement;
     if(fileInput) fileInput.value = '';
   };
@@ -129,7 +127,7 @@ export default function LogUploaderPage() {
   useEffect(() => {
     if (logType === 'DNA Quantification' && quantSource === 'Extraction Plate' && sourceExtractionEntry) {
         handleFetchExtractionWells(sourceExtractionEntry);
-    } else if (logType === 'DNA Quantification' && quantSource && quantSource !== 'Extraction Plate') {
+    } else if (logType === 'DNA Quantification' && quantSource && quantSource !== 'Extraction Plate' && quantSource !== 'Nanodrop CSV') {
         setPreparedQuantTable([]);
     }
   }, [logType, quantSource, sourceExtractionEntry, handleFetchExtractionWells]);
@@ -153,7 +151,9 @@ export default function LogUploaderPage() {
     startProcessing(async () => {
         try {
             const fileBuffer = await selectedFile.arrayBuffer();
-            const result = await previewFile(logType, fileBuffer);
+            // Pass sourceMode for nanodrop CSV routing
+            const sourceMode = logType === 'DNA Quantification' && quantSource === 'Nanodrop CSV' ? 'Nanodrop CSV' : undefined;
+            const result = await previewFile(logType, fileBuffer, sourceMode);
             if (result.success) {
                 if (logType === 'Ligation') {
                     setLigationPreviewData(result.data);
@@ -162,18 +162,17 @@ export default function LogUploaderPage() {
                     setColonyPcrPreviewData(result.data);
                 } else if (logType === 'DNA Extraction') {
                     setDnaExtractionPlates(result.data);
-                } else if (logType === 'DNA Quantification') {
-                    setDnaQuantificationPreview({ data: result.data, headers: result.headers || [] });
-                } else if (logType === 'Nanodrop') {
+                } else if (logType === 'DNA Quantification' && quantSource === 'Nanodrop CSV') {
                     setNanodropPreviewData(result.data);
                     // Auto-extract entry code from filename: "Quantification_U0410P1-V-ER.csv" -> "U0410P1-V-ER"
                     const fileName = selectedFile.name;
                     const match = fileName.match(/^Quantification_(.+)\.csv$/i);
                     if (match) {
-                        const code = match[1];
-                        setEntryCode(code);
-                        setNanodropExtractionEntry(code);
+                        setEntryCode(match[1]);
+                        setSourceExtractionEntry(match[1]);
                     }
+                } else if (logType === 'DNA Quantification') {
+                    setDnaQuantificationPreview({ data: result.data, headers: result.headers || [] });
                 }
                 toast({ title: 'File Ready for Review', description: result.message });
             } else {
@@ -337,8 +336,6 @@ export default function LogUploaderPage() {
         } else if (logType === 'DNA Quantification') {
             additionalData.sourceMode = quantSource;
             additionalData.sourceDetails = { extractionEntry: sourceExtractionEntry };
-        } else if (logType === 'Nanodrop') {
-            additionalData.extractionEntry = nanodropExtractionEntry;
         }
 
         // Build images map with entry code keys for Colony PCR
@@ -428,7 +425,7 @@ export default function LogUploaderPage() {
   const showColonyPcrPreview = logType === 'Colony PCR' && colonyPcrPreviewData;
   const showDnaExtractionPreview = logType === 'DNA Extraction' && dnaExtractionPlates;
   const showDnaQuantificationPreview = logType === 'DNA Quantification' && dnaQuantificationPreview && preparedQuantTable;
-  const showNanodropPreview = logType === 'Nanodrop' && nanodropPreviewData;
+  const showNanodropPreview = logType === 'DNA Quantification' && quantSource === 'Nanodrop CSV' && nanodropPreviewData;
 
   return (
     <div className="flex flex-col items-center space-y-6">
@@ -462,14 +459,14 @@ export default function LogUploaderPage() {
                       </Select>
                   </div>
 
-                  {logType && logType !== 'DNA Quantification' && (
+                  {logType && (logType !== 'DNA Quantification' || quantSource === 'Nanodrop CSV') && (
                     <div className="space-y-2">
                         <Label htmlFor="entry-code">Entry Code</Label>
-                        <Input id="entry-code" placeholder={logType === 'Nanodrop' ? 'Auto-filled from filename' : 'e.g., U0127-Ligation-FL'} value={entryCode} onChange={(e) => setEntryCode(e.target.value)} disabled={isBusy} />
-                        {logType === 'Nanodrop' && nanodropExtractionEntry && (
+                        <Input id="entry-code" placeholder={quantSource === 'Nanodrop CSV' ? 'Auto-filled from filename' : 'e.g., U0127-Ligation-FL'} value={entryCode} onChange={(e) => setEntryCode(e.target.value)} disabled={isBusy} />
+                        {quantSource === 'Nanodrop CSV' && sourceExtractionEntry && (
                           <div className="text-sm">
-                            {extractionEntries.some(e => e.name === nanodropExtractionEntry)
-                              ? <span className="text-green-600 flex items-center gap-1">✓ Linked to extraction: {nanodropExtractionEntry}</span>
+                            {extractionEntries.some(e => e.name === sourceExtractionEntry)
+                              ? <span className="text-green-600 flex items-center gap-1">✓ Linked to extraction: {sourceExtractionEntry}</span>
                               : <span className="text-yellow-600 flex items-center gap-1">⚠ No matching extraction entry — will link when uploaded</span>
                             }
                           </div>
@@ -528,8 +525,8 @@ export default function LogUploaderPage() {
                                 Click to upload
                             </label> or drag and drop
                         </p>
-                        <p className="text-xs text-muted-foreground">{logType === 'Nanodrop' ? '.csv file (from NanoDrop)' : '.xlsx or .xls file'}</p>
-                        <Input id="log-file" type="file" className="hidden" accept={logType === 'Nanodrop' ? '.csv' : '.xlsx, .xls'} onChange={handleFileChange} disabled={isBusy || !logType || (logType === 'DNA Quantification' && !quantSource)}/>
+                        <p className="text-xs text-muted-foreground">{quantSource === 'Nanodrop CSV' ? '.csv file (from NanoDrop)' : '.xlsx or .xls file'}</p>
+                        <Input id="log-file" type="file" className="hidden" accept={quantSource === 'Nanodrop CSV' ? '.csv' : '.xlsx, .xls'} onChange={handleFileChange} disabled={isBusy || !logType || (logType === 'DNA Quantification' && !quantSource)}/>
                         {file && !isBusy && <p className="mt-4 text-sm font-medium text-center">Selected: {file.name}</p>}
                         {logType === 'DNA Quantification' && !quantSource && <p className="mt-2 text-xs text-destructive flex items-center gap-1"><Info className="w-3 h-3" /> Select source first</p>}
                     </div>
@@ -696,8 +693,8 @@ export default function LogUploaderPage() {
         <div className="w-full max-w-5xl space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Hash className="w-6 h-6"/> Nanodrop Preview</CardTitle>
-              <CardDescription>{nanodropPreviewData.length} samples parsed from CSV</CardDescription>
+              <CardTitle className="flex items-center gap-2"><Hash className="w-6 h-6"/> Nanodrop CSV Preview</CardTitle>
+              <CardDescription>Source: Nanodrop CSV{sourceExtractionEntry ? ` (${sourceExtractionEntry})` : ''} — {nanodropPreviewData.length} samples parsed</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="relative w-full overflow-auto rounded-md border max-h-[600px]">
