@@ -1,0 +1,126 @@
+ligation:
+  index:
+    - {name: name, type: TEXT}
+    - {name: id, type: INTEGER, primary_key: true}
+  data:
+    - {name: ligation_id, type: INTEGER}
+    - {name: "Well ", type: TEXT}
+    - {name: Name, type: TEXT}
+    - {name: BBID, type: TEXT}
+    - {name: "Vector ", type: TEXT}
+    - {name: Enzyme, type: TEXT}
+    - {name: Vector Lot, type: TEXT}
+    - {name: Vector Position, type: TEXT}
+    - {name: Vol of Vector, type: TEXT}
+    - {name: Insert 1, type: TEXT}
+    - {name: Well position, type: TEXT}
+    - {name: Vol of Insert, type: TEXT}
+    - {name: Insert 2, type: TEXT}
+    - {name: Insert 3, type: TEXT}
+    - {name: H2O Volume, type: TEXT}
+    - {name: 2XHF, type: TEXT}
+    - {name: Len, type: TEXT}
+    - {name: Resistance, type: TEXT}
+    - {name: worksheet1, type: TEXT}
+    - {name: worksheet2, type: TEXT}
+
+colony_pcr:
+  index:
+    - {name: name, type: TEXT}
+    - {name: id, type: INTEGER, primary_key: true}
+  data:
+    - {name: colony_pcr_id, type: INTEGER}
+    - {name: plate_id, type: INTEGER}
+    - {name: Row, type: TEXT}
+    - {name: C1, type: TEXT}
+    - {name: C2, type: TEXT}
+    - {name: C3, type: TEXT}
+    - {name: C4, type: TEXT}
+    - {name: C5, type: TEXT}
+    - {name: C6, type: TEXT}
+    - {name: C7, type: TEXT}
+    - {name: C8, type: TEXT}
+    - {name: C9, type: TEXT}
+    - {name: C10, type: TEXT}
+    - {name: C11, type: TEXT}
+    - {name: C12, type: TEXT}
+  samples:
+    - {name: colony_pcr_id, type: INTEGER}
+    - {name: plate_id, type: INTEGER}
+    - {name: JobID, type: TEXT}
+    - {name: BBID, type: TEXT}
+    - {name: Vector, type: TEXT}
+    - {name: Resistance, type: TEXT}
+    - {name: Primers, type: TEXT}
+    - {name: Length, type: TEXT}
+  positives:
+    - {name: colony_pcr_id, type: INTEGER}
+    - {name: plate_id, type: INTEGER}
+    - {name: well, type: TEXT}
+
+dna_extraction:
+  index:
+    - {name: name, type: TEXT}
+    - {name: id, type: INTEGER, primary_key: true}
+  data:
+    - {name: dna_extraction_id, type: INTEGER}
+    - {name: plate_id, type: INTEGER}
+    - {name: Row, type: TEXT}
+    - {name: C1, type: TEXT}
+    - {name: C2, type: TEXT}
+    - {name: C3, type: TEXT}
+    - {name: C4, type: TEXT}
+    - {name: C5, type: TEXT}
+    - {name: C6, type: TEXT}
+    - {name: C7, type: TEXT}
+    - {name: C8, type: TEXT}
+    - {name: C9, type: TEXT}
+    - {name: C10, type: TEXT}
+    - {name: C11, type: TEXT}
+    - {name: C12, type: TEXT}
+  antibiotic:
+    - {name: dna_extraction_id, type: INTEGER}
+    - {name: plate_id, type: INTEGER}
+    - {name: well_id, type: TEXT}
+    - {name: value, type: TEXT}
+  temperature:
+    - {name: dna_extraction_id, type: INTEGER}
+    - {name: plate_id, type: INTEGER}
+    - {name: well_id, type: TEXT}
+    - {name: value, type: TEXT}
+  bacteria:
+    - {name: dna_extraction_id, type: INTEGER}
+    - {name: plate_id, type: INTEGER}
+    - {name: well_id, type: TEXT}
+    - {name: value, type: TEXT}
+  incubation:
+    - {name: dna_extraction_id, type: INTEGER}
+    - {name: plate_id, type: INTEGER}
+    - {name: well_id, type: TEXT}
+    - {name: value, type: TEXT}
+  prep:
+    - {name: dna_extraction_id, type: INTEGER}
+    - {name: plate_id, type: INTEGER}
+    - {name: well_id, type: TEXT}
+    - {name: value, type: TEXT}
+
+dna_quantification:
+  index:
+    - {name: name, type: TEXT}
+    - {name: id, type: INTEGER, primary_key: true}
+    - {name: source, type: TEXT}
+    - {name: source_details, type: TEXT}
+  extraction_plate:
+    - {name: quantification_id, type: INTEGER}
+    # Columns are somewhat dynamic in the current app, but usually include JobID, BBID etc.
+    # For DuckDB I can add columns on the fly if needed, but I'll define common ones.
+    - {name: JobID, type: TEXT}
+    - {name: BBID, type: TEXT}
+  fragments:
+    - {name: quantification_id, type: INTEGER}
+    - {name: JobID, type: TEXT}
+    - {name: BBID, type: TEXT}
+  other:
+    - {name: quantification_id, type: INTEGER}
+    - {name: JobID, type: TEXT}
+    - {name: BBID, type: TEXT}
