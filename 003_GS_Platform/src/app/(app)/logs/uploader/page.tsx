@@ -40,6 +40,8 @@ export default function LogUploaderPage() {
   const [colonyPcrPreviewData, setColonyPcrPreviewData] = useState<any[] | null>(null);
   const [dnaExtractionPlates, setDnaExtractionPlates] = useState<DnaExtractionPlate[] | null>(null);
   const [dnaQuantificationPreview, setDnaQuantificationPreview] = useState<{ data: any[], headers: string[] } | null>(null);
+  const [nanodropPreviewData, setNanodropPreviewData] = useState<any[] | null>(null);
+  const [nanodropExtractionEntry, setNanodropExtractionEntry] = useState<string>('');
 
   // Quantification states
   const [quantSource, setQuantSource] = useState<DnaQuantificationSource | null>(null);
@@ -96,6 +98,8 @@ export default function LogUploaderPage() {
     setQuantSource(null);
     setSourceExtractionEntry('');
     setPreparedQuantTable(null);
+    setNanodropPreviewData(null);
+    setNanodropExtractionEntry('');
     const fileInput = document.getElementById('log-file') as HTMLInputElement;
     if(fileInput) fileInput.value = '';
   };
@@ -104,7 +108,7 @@ export default function LogUploaderPage() {
     startFetchingWells(async () => {
         const result = await fetchExtractionWells(entryName);
         if (result.success && result.wells) {
-            const table = result.wells.map(w => ({
+            const table = result.wells.map((w: { well: string; sample: string }) => ({
                 'Well': w.well,
                 'Sample Name': w.sample,
                 'Concentration (ng/ul)': '',
@@ -160,6 +164,16 @@ export default function LogUploaderPage() {
                     setDnaExtractionPlates(result.data);
                 } else if (logType === 'DNA Quantification') {
                     setDnaQuantificationPreview({ data: result.data, headers: result.headers || [] });
+                } else if (logType === 'Nanodrop') {
+                    setNanodropPreviewData(result.data);
+                    // Auto-extract entry code from filename: "Quantification_U0410P1-V-ER.csv" -> "U0410P1-V-ER"
+                    const fileName = selectedFile.name;
+                    const match = fileName.match(/^Quantification_(.+)\.csv$/i);
+                    if (match) {
+                        const code = match[1];
+                        setEntryCode(code);
+                        setNanodropExtractionEntry(code);
+                    }
                 }
                 toast({ title: 'File Ready for Review', description: result.message });
             } else {
@@ -323,6 +337,8 @@ export default function LogUploaderPage() {
         } else if (logType === 'DNA Quantification') {
             additionalData.sourceMode = quantSource;
             additionalData.sourceDetails = { extractionEntry: sourceExtractionEntry };
+        } else if (logType === 'Nanodrop') {
+            additionalData.extractionEntry = nanodropExtractionEntry;
         }
 
         // Build images map with entry code keys for Colony PCR
@@ -412,6 +428,7 @@ export default function LogUploaderPage() {
   const showColonyPcrPreview = logType === 'Colony PCR' && colonyPcrPreviewData;
   const showDnaExtractionPreview = logType === 'DNA Extraction' && dnaExtractionPlates;
   const showDnaQuantificationPreview = logType === 'DNA Quantification' && dnaQuantificationPreview && preparedQuantTable;
+  const showNanodropPreview = logType === 'Nanodrop' && nanodropPreviewData;
 
   return (
     <div className="flex flex-col items-center space-y-6">
@@ -448,7 +465,15 @@ export default function LogUploaderPage() {
                   {logType && logType !== 'DNA Quantification' && (
                     <div className="space-y-2">
                         <Label htmlFor="entry-code">Entry Code</Label>
-                        <Input id="entry-code" placeholder="e.g., U0127-Ligation-FL" value={entryCode} onChange={(e) => setEntryCode(e.target.value)} disabled={isBusy} />
+                        <Input id="entry-code" placeholder={logType === 'Nanodrop' ? 'Auto-filled from filename' : 'e.g., U0127-Ligation-FL'} value={entryCode} onChange={(e) => setEntryCode(e.target.value)} disabled={isBusy} />
+                        {logType === 'Nanodrop' && nanodropExtractionEntry && (
+                          <div className="text-sm">
+                            {extractionEntries.some(e => e.name === nanodropExtractionEntry)
+                              ? <span className="text-green-600 flex items-center gap-1">✓ Linked to extraction: {nanodropExtractionEntry}</span>
+                              : <span className="text-yellow-600 flex items-center gap-1">⚠ No matching extraction entry — will link when uploaded</span>
+                            }
+                          </div>
+                        )}
                     </div>
                   )}
 
@@ -474,7 +499,7 @@ export default function LogUploaderPage() {
                   )}
 
                   <div className="flex items-center gap-2 pt-2">
-                    <Button onClick={handleAddToLog} disabled={isBusy || (!showLigationPreview && !showColonyPcrPreview && !showDnaExtractionPreview && !showDnaQuantificationPreview) || !entryCode.trim()}>
+                    <Button onClick={handleAddToLog} disabled={isBusy || (!showLigationPreview && !showColonyPcrPreview && !showDnaExtractionPreview && !showDnaQuantificationPreview && !showNanodropPreview) || !entryCode.trim()}>
                       {isAdding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                       Add to Log
                     </Button>
@@ -503,8 +528,8 @@ export default function LogUploaderPage() {
                                 Click to upload
                             </label> or drag and drop
                         </p>
-                        <p className="text-xs text-muted-foreground">.xlsx or .xls file</p>
-                        <Input id="log-file" type="file" className="hidden" accept=".xlsx, .xls" onChange={handleFileChange} disabled={isBusy || !logType || (logType === 'DNA Quantification' && !quantSource)}/>
+                        <p className="text-xs text-muted-foreground">{logType === 'Nanodrop' ? '.csv file (from NanoDrop)' : '.xlsx or .xls file'}</p>
+                        <Input id="log-file" type="file" className="hidden" accept={logType === 'Nanodrop' ? '.csv' : '.xlsx, .xls'} onChange={handleFileChange} disabled={isBusy || !logType || (logType === 'DNA Quantification' && !quantSource)}/>
                         {file && !isBusy && <p className="mt-4 text-sm font-medium text-center">Selected: {file.name}</p>}
                         {logType === 'DNA Quantification' && !quantSource && <p className="mt-2 text-xs text-destructive flex items-center gap-1"><Info className="w-3 h-3" /> Select source first</p>}
                     </div>
@@ -651,19 +676,64 @@ export default function LogUploaderPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="rounded-md border">
-                      <DnaExtractionGrid 
-                        plateData={plate.data} 
-                        platePrefix={plate.plateId === 1 ? 'p1' : 'p2'} 
-                        colOffset={plate.plateId === 1 ? 0 : 6} 
-                        selectedWells={selectedWells} 
-                        onWellSelect={handleWellSelect} 
-                        onBulkSelect={handleBulkSelect} 
+                      <DnaExtractionGrid
+                        plateData={plate.data}
+                        platePrefix={plate.plateId === 1 ? 'p1' : 'p2'}
+                        colOffset={plate.plateId === 1 ? 0 : 6}
+                        selectedWells={selectedWells}
+                        onWellSelect={handleWellSelect}
+                        onBulkSelect={handleBulkSelect}
                       />
                     </div>
                     <DnaExtractionLegend plateData={plate.data} />
                   </CardContent>
                 </Card>
             ))}
+        </div>
+      )}
+
+      {showNanodropPreview && (
+        <div className="w-full max-w-5xl space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Hash className="w-6 h-6"/> Nanodrop Preview</CardTitle>
+              <CardDescription>{nanodropPreviewData.length} samples parsed from CSV</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="relative w-full overflow-auto rounded-md border max-h-[600px]">
+                <Table>
+                  <TableHeader className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm">
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Row #</TableHead>
+                      <TableHead className="whitespace-nowrap">Concentration (ng/µL)</TableHead>
+                      <TableHead className="whitespace-nowrap">A260/A280</TableHead>
+                      <TableHead className="whitespace-nowrap">A260/A230</TableHead>
+                      <TableHead className="whitespace-nowrap">A260</TableHead>
+                      <TableHead className="whitespace-nowrap">A280</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {nanodropPreviewData.map((row: any) => {
+                      const a260a280 = row.a260_a280;
+                      const purityOk = a260a280 !== null && a260a280 >= 1.7 && a260a280 <= 2.0;
+                      return (
+                        <TableRow key={row.row_number} className={a260a280 !== null && !purityOk ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''}>
+                          <TableCell>{row.row_number}</TableCell>
+                          <TableCell>{row.concentration_ng_ul?.toFixed(3) ?? ''}</TableCell>
+                          <TableCell className={a260a280 !== null && !purityOk ? 'text-yellow-700 dark:text-yellow-400 font-medium' : ''}>
+                            {a260a280?.toFixed(3) ?? ''}
+                          </TableCell>
+                          <TableCell>{row.a260_a230?.toFixed(3) ?? ''}</TableCell>
+                          <TableCell>{row.a260?.toFixed(3) ?? ''}</TableCell>
+                          <TableCell>{row.a280?.toFixed(3) ?? ''}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

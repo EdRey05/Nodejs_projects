@@ -21,7 +21,9 @@ def init_db():
             full_table_name = f"{log_type}_{table_name}"
             cols_def = []
             for col in columns:
-                col_def = f'"{col["name"]}" {col["type"]}'
+                col_name = col["name"]
+                col_type = col["type"]
+                col_def = f'"{col_name}" {col_type}'
                 if col.get('primary_key'):
                     col_def += " PRIMARY KEY"
                 cols_def.append(col_def)
@@ -53,7 +55,8 @@ def insert_data(log_type, table_name, data):
         df = df[df_cols]
 
         # Bulk insert using DuckDB's native integration with pandas
-        conn.execute(f"INSERT INTO {full_table_name} ({', '.join([f'\"{c}\"' for c in df_cols])}) SELECT * FROM df")
+        quoted_cols = ', '.join(['"' + c + '"' for c in df_cols])
+        conn.execute(f"INSERT INTO {full_table_name} ({quoted_cols}) SELECT * FROM df")
     except Exception as e:
         print(f"Error inserting into {full_table_name}: {str(e)}", file=sys.stderr)
     finally:

@@ -158,3 +158,17 @@ dna_quantification:
     - {name: quantification_id, type: INTEGER}
     - {name: JobID, type: TEXT}
     - {name: BBID, type: TEXT}
+
+nanodrop:
+  index:
+    - {name: name, type: TEXT}
+    - {name: id, type: INTEGER, primary_key: true}
+    - {name: extraction_entry, type: TEXT}
+  data:
+    - {name: nanodrop_id, type: INTEGER}
+    - {name: row_number, type: INTEGER}
+    - {name: concentration_ng_ul, type: REAL}
+    - {name: a260_a280, type: REAL}
+    - {name: a260_a230, type: REAL}
+    - {name: a260, type: REAL}
+    - {name: a280, type: REAL}

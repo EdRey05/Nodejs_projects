@@ -76,6 +76,8 @@ def action_parse_and_persist(data: dict) -> dict:
     if log_type == 'dna_quantification':
         index_entry["source"] = additional_data.get('sourceMode', 'Unknown')
         index_entry["source_details"] = json.dumps(additional_data.get('sourceDetails', {}))
+    elif log_type == 'nanodrop':
+        index_entry["extraction_entry"] = additional_data.get('extractionEntry', '')
     db_ops.insert_data(log_type, 'index', [index_entry])
 
     # Insert data based on log type
@@ -169,6 +171,10 @@ def action_parse_and_persist(data: dict) -> dict:
 
         rows = [{'quantification_id': new_id, **row} for row in parse_result['data']]
         db_ops.insert_data(log_type, mode_table, rows)
+
+    elif log_type == 'nanodrop':
+        rows = [{'nanodrop_id': new_id, **row} for row in parse_result['data']]
+        db_ops.insert_data(log_type, 'data', rows)
 
     # Return fresh payload
     payload = _fetch_all_tables(log_type)

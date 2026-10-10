@@ -52,6 +52,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         'colony-pcr': 'Colony PCR Log',
         'dna-extraction': 'DNA Extraction Log',
         'dna-quantification': 'DNA Quantification Log',
+        'nanodrop': 'Nanodrop Log',
         'gene-synthesis-progress': 'Gene Tracker',
       };
   
@@ -170,6 +171,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild isActive={pathname === '/logs/dna-quantification'}><Link href="/logs/dna-quantification">DNA Quantification</Link></SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === '/logs/nanodrop'}><Link href="/logs/nanodrop">Nanodrop</Link></SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>
                 </CollapsibleContent>
