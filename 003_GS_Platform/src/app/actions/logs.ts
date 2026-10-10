@@ -118,6 +118,22 @@ export async function fetchPersistedData(logType: LogType): Promise<FetchResult>
     }
 }
 
+export async function fetchGeneTracker(): Promise<{ success: boolean; data?: any[]; message?: string }> {
+    try {
+        const result = await runBridge({ action: 'fetch_gene_tracker' }) as any;
+        if (!result.success) {
+            return { success: false, message: result.message || 'Fetch failed.' };
+        }
+        const bridgeResult = result.data;
+        if (!bridgeResult.success) {
+            return { success: false, message: bridgeResult.message };
+        }
+        return { success: true, data: bridgeResult.data };
+    } catch (e: any) {
+        return { success: false, message: e.message };
+    }
+}
+
 export async function fetchExtractionWells(entryName: string) {
     try {
         const result = await runBridge({

@@ -248,6 +248,18 @@ def action_fetch_extraction_wells(data: dict) -> dict:
     return {"success": True, "wells": wells}
 
 
+def action_fetch_gene_tracker(_data: dict) -> dict:
+    """Fetch all gene tracker data from DuckDB."""
+    if not os.path.exists(db_ops.DB_PATH):
+        return {"success": False, "message": "Database not initialized."}
+
+    data = db_ops.query_data('gene_tracker', 'data')
+    if not data:
+        return {"success": False, "message": "No gene tracker data found."}
+
+    return {"success": True, "data": data}
+
+
 def action_db_init(_data: dict) -> dict:
     """Initialize the database."""
     db_ops.init_db()
@@ -281,6 +293,7 @@ ACTIONS = {
     'parse_and_persist': action_parse_and_persist,
     'fetch': action_fetch,
     'fetch_extraction_wells': action_fetch_extraction_wells,
+    'fetch_gene_tracker': action_fetch_gene_tracker,
     'db_init': action_db_init,
     'db_export': action_db_export,
     'db_run_query': action_db_run_query,

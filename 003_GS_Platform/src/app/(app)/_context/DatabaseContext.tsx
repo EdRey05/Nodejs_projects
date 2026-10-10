@@ -12,7 +12,7 @@ export interface Database {
 
 interface DatabaseContextType {
   databases: Record<string, Database>;
-  setDatabase: (logType: LogType, database: Database) => void;
+  setDatabase: (key: LogType | string, database: Database) => void;
 }
 
 const DatabaseContext = createContext<DatabaseContextType | undefined>(undefined);
@@ -20,8 +20,8 @@ const DatabaseContext = createContext<DatabaseContextType | undefined>(undefined
 export function DatabaseContextProvider({ children }: { children: ReactNode }) {
   const [databases, setDatabases] = useState<Record<string, Database>>({});
 
-  const setDatabase = useCallback((logType: LogType, database: Database) => {
-    setDatabases(prev => ({ ...prev, [logType]: database }));
+  const setDatabase = useCallback((key: LogType | string, database: Database) => {
+    setDatabases(prev => ({ ...prev, [key]: database }));
   }, []);
 
   return (

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from '@/components/ui/carousel';
 import { GitBranch } from 'lucide-react';
+import { LogSearchCombobox } from '@/components/ui/log-search-combobox';
 import * as xlsx from 'xlsx';
 
 type GroupedLogData = {
@@ -21,6 +22,7 @@ export default function LigationLogPage() {
   const [groupedData, setGroupedData] = useState<GroupedLogData[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [api, setApi] = useState<CarouselApi>();
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     const db = databases['Ligation'];
@@ -126,8 +128,9 @@ export default function LigationLogPage() {
             updateContext(JSON.stringify({ page: "Ligation Log", status: "No data loaded." }, null, 2));
             return;
         }
-        
+
         const currentSnap = api.selectedScrollSnap();
+        setCurrentIndex(currentSnap);
         const totalSnaps = api.scrollSnapList().length;
         const currentGroup = groupedData[currentSnap];
         
@@ -188,6 +191,14 @@ export default function LigationLogPage() {
   return (
      <div className="w-full flex justify-center p-4 md:px-20">
         <div className="relative w-full max-w-5xl">
+          <div className="flex justify-center mb-4">
+            <LogSearchCombobox
+              items={groupedData.map((g, i) => ({ label: g.code, index: i }))}
+              currentIndex={currentIndex}
+              onSelect={(index) => api?.scrollTo(index)}
+              placeholder="Search ligation entries..."
+            />
+          </div>
           <Carousel className="w-full" setApi={setApi} opts={{ align: "start", loop: false, startIndex }}>
             <CarouselContent>
               {groupedData.map((group, index) => (

@@ -12,6 +12,7 @@ import { Microscope, Dna, ImageUp, GitBranch, X } from 'lucide-react';
 import type { PlateData, WellData } from '@/lib/types';
 import { ColonyPcrGrid } from '../uploader/_components/colony-pcr-grid';
 import { Button } from '@/components/ui/button';
+import { LogSearchCombobox } from '@/components/ui/log-search-combobox';
 
 type ParsedPlateData = {
   plateId: string;
@@ -36,6 +37,7 @@ export default function ColonyPcrLogPage() {
   const { updateContext } = useAppContext();
   const [isLoading, setIsLoading] = useState(true);
   const [api, setApi] = useState<CarouselApi>();
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Memoize the heavy data transformation so it only runs when databases change
@@ -121,6 +123,7 @@ export default function ColonyPcrLogPage() {
         }
 
         const currentSnap = api.selectedScrollSnap();
+        setCurrentIndex(currentSnap);
         const totalSnaps = api.scrollSnapList().length;
         const currentGroup = groupedData[currentSnap];
 
@@ -192,6 +195,14 @@ export default function ColonyPcrLogPage() {
         </DialogContent>
       </Dialog>
       <div className="relative w-full max-w-5xl px-12">
+        <div className="flex justify-center mb-4">
+          <LogSearchCombobox
+            items={groupedData.map((g, i) => ({ label: g.code, index: i }))}
+            currentIndex={currentIndex}
+            onSelect={(index) => api?.scrollTo(index)}
+            placeholder="Search colony PCR entries..."
+          />
+        </div>
         <Carousel className="w-full" setApi={setApi} opts={{ align: "start", loop: false, startIndex }}>
           <CarouselContent className="-ml-4">
             {groupedData.map((entry) => (

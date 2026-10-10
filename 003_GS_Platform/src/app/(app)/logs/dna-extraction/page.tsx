@@ -6,6 +6,7 @@ import { useAppContext } from '../../_context/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from '@/components/ui/carousel';
 import { Dna, GitBranch } from 'lucide-react';
+import { LogSearchCombobox } from '@/components/ui/log-search-combobox';
 import * as xlsx from 'xlsx';
 import { DnaExtractionGrid } from '../uploader/_components/dna-extraction-grid';
 import { DnaExtractionLegend } from '../uploader/_components/dna-extraction-legend';
@@ -29,6 +30,7 @@ export default function DnaExtractionLogPage() {
   const [groupedData, setGroupedData] = useState<GroupedLogData[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [api, setApi] = useState<CarouselApi>();
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     const db = databases['DNA Extraction'];
@@ -261,6 +263,7 @@ export default function DnaExtractionLogPage() {
         }
         
         const currentSnap = api.selectedScrollSnap();
+        setCurrentIndex(currentSnap);
         const currentGroup = groupedData[currentSnap];
         if (!currentGroup) return;
 
@@ -315,6 +318,14 @@ export default function DnaExtractionLogPage() {
   return (
     <div className="w-full flex justify-center p-4">
       <div className="relative w-full max-w-5xl px-12">
+        <div className="flex justify-center mb-4">
+          <LogSearchCombobox
+            items={groupedData.map((g, i) => ({ label: g.code, index: i }))}
+            currentIndex={currentIndex}
+            onSelect={(index) => api?.scrollTo(index)}
+            placeholder="Search extraction entries..."
+          />
+        </div>
         <Carousel className="w-full" setApi={setApi} opts={{ align: "start", loop: false, startIndex }}>
           <CarouselContent className="-ml-4">
             {groupedData.map((entry) => (

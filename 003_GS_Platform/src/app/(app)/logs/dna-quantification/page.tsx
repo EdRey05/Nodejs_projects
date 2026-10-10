@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from '@/components/ui/carousel';
 import { Hash, GitBranch } from 'lucide-react';
+import { LogSearchCombobox } from '@/components/ui/log-search-combobox';
 import * as xlsx from 'xlsx';
 
 type GroupedQuantData = {
@@ -24,6 +25,7 @@ export default function DnaQuantificationLogPage() {
   const [groupedData, setGroupedData] = useState<GroupedQuantData[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [api, setApi] = useState<CarouselApi>();
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     const db = databases['DNA Quantification'];
@@ -119,6 +121,7 @@ export default function DnaQuantificationLogPage() {
 
     const updateCarouselContext = () => {
         const currentSnap = api.selectedScrollSnap();
+        setCurrentIndex(currentSnap);
         const currentGroup = groupedData[currentSnap];
         if (!currentGroup) return;
 
@@ -174,6 +177,14 @@ export default function DnaQuantificationLogPage() {
   return (
     <div className="w-full flex justify-center p-4">
       <div className="relative w-full max-w-5xl px-12">
+        <div className="flex justify-center mb-4">
+          <LogSearchCombobox
+            items={groupedData.map((g, i) => ({ label: g.code, index: i }))}
+            currentIndex={currentIndex}
+            onSelect={(index) => api?.scrollTo(index)}
+            placeholder="Search quantification entries..."
+          />
+        </div>
         <Carousel className="w-full" setApi={setApi} opts={{ align: "start", loop: false, startIndex }}>
           <CarouselContent className="-ml-4">
             {groupedData.map((entry) => (
