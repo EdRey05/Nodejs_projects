@@ -40,3 +40,6 @@ next-env.d.ts
 data/*.duckdb
 data/*.duckdb.wal
 data/obsolete/
+
+# local documentation (stays on this machine; not pushed)
+docs/

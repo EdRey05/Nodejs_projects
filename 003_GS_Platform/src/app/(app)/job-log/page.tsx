@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { useDatabase } from '../_context/DatabaseContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,8 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ExportLogButton } from '@/components/export-log-button';
-import { FileText, ArrowUpDown, ArrowUp, ArrowDown, Columns3, X } from 'lucide-react';
+import { FileText, ArrowUpDown, ArrowUp, ArrowDown, Columns3, X, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { stageNumber } from '@/lib/stages';
 
 type JobLogRow = Record<string, any>;
 
@@ -60,13 +62,21 @@ const STAGE_DEFS: { id: StageCategory; label: string; description: string; color
   { id: 'moved', label: 'Moved', description: 'Moved to Sg', color: 'bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200', activeColor: 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' },
 ];
 
+/**
+ * Classify a stage string into a filter category.
+ *
+ * The canonical pipeline stages (0. Onboarding through 12. Completed) are
+ * in-progress work. Cancelled / moved / shipped are LIFECYCLE states that
+ * sit outside the pipeline, so they are matched by keyword rather than by
+ * stage number — '0. Onboarding' is stage 0, not a cancellation.
+ */
 function classifyStage(stage: string): StageCategory {
   const p = (stage || '').trim().toLowerCase();
+  if (!p) return 'other';
   if (p.includes('shipped')) return 'shipped';
-  if (p.startsWith('0.') || p.includes('cancel')) return 'canceled';
+  if (p.includes('cancel')) return 'canceled';
   if (p.includes('moved')) return 'moved';
-  // Numbered stages 1-12
-  if (/^\d{1,2}\./.test(p)) return 'in_progress';
+  if (stageNumber(p) !== null) return 'in_progress';
   return 'other';
 }
 
@@ -201,6 +211,13 @@ export default function JobLogPage() {
       {/* Filter toolbar */}
       <Card className="p-3">
         <div className="flex flex-wrap gap-2 items-center">
+          <Button asChild size="sm">
+            <Link href="/job-log/new">
+              <Plus className="mr-1.5 h-4 w-4" />
+              New Job
+            </Link>
+          </Button>
+          <div className="h-6 w-px bg-border mx-1" />
           {STAGE_DEFS.map(f => {
             const isActive = activeFilters.has(f.id);
             const count = categoryCounts[f.id] || 0;

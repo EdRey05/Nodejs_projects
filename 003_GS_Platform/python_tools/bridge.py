@@ -311,6 +311,18 @@ def action_import_job_log(data: dict) -> dict:
     return _import_jl(data)
 
 
+def action_create_job_log_row(data: dict) -> dict:
+    """Create one Job Log row from the app's New Job form."""
+    from job_log import create_job_log_row as _create
+    return _create(data)
+
+
+def action_fetch_stages(data: dict) -> dict:
+    """Canonical stage vocabulary (shared with the frontend)."""
+    from job_log import load_stages
+    return {"success": True, "stages": load_stages()}
+
+
 def action_import_idt(data: dict) -> dict:
     """Summary IDT Log v2 -> idt_fragments + pcr_fragments (P8 job web)."""
     from job_web_import import import_idt as _imp
@@ -435,6 +447,8 @@ ACTIONS = {
     'fetch_job_log': action_fetch_job_log,
     'bulk_import': action_bulk_import,
     'import_job_log': action_import_job_log,
+    'create_job_log_row': action_create_job_log_row,
+    'fetch_stages': action_fetch_stages,
     'import_master_summary': action_import_master_summary,
     'import_vector_db': action_import_vector_db,
     'lookup_vector': action_lookup_vector,

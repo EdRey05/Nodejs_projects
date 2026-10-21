@@ -2,9 +2,11 @@
 
 A local lab data application for viewing daily gene-synthesis logs, building Excel layouts, and connecting jobs to their experimental history. The interactive interface uses Next.js/React; Python handles file processing and DuckDB storage.
 
-## Current scope — v0.0.5
+## Current scope — v0.0.7
 
 - **Job Log:** the app's first table and the spine for job relationships — searchable, sortable and filterable master job data.
+- **Job stages:** a canonical thirteen-stage pipeline vocabulary, shared by the Python bridge and the frontend.
+- **New Job:** create a job from the app, with the stage picker and the pipeline's turnaround estimates.
 - **Log review and upload:** Ligation, Colony PCR, DNA Extraction, and DNA Quantification, with tables, plate views, images, and carousel navigation.
 - **Sequencing:** preparation and analysis views with Python importers.
 - **Layout creation:** Ligation, Colony PCR, and extraction workbook generators, plus an interactive plate designer.
@@ -13,6 +15,40 @@ A local lab data application for viewing daily gene-synthesis logs, building Exc
 - **Dashboard and developer tools:** database counts, SQL inspection, exports, and a widget playground.
 
 The Pipelines section remains a placeholder. There is no longer a separate Nanodrop page; Nanodrop parsing remains in the backend. Features are under active development and are not all covered by automated tests.
+
+## Job stages
+
+The pipeline runs through thirteen stages, from `0. Onboarding` to
+`12. Completed - Preparing for Shipment`. The vocabulary is defined once in
+`python_tools/stages.json` and mirrored in `src/lib/stages.ts`; the bridge
+validates every write against it. `python_tools/check_stages.py` compares the two
+lists and fails if they drift.
+
+```bash
+python python_tools/check_stages.py
+```
+
+Cancelled, moved-to-Sg, and shipped are lifecycle states outside the pipeline.
+They are filtered as categories on the Job Log page, not selected as stages.
+
+## Creating a job
+
+The **New Job** page writes the Job Log columns up to `prep` — Work No., BBI ID,
+Order Date, SO, Gene Name, Vector, Cloning Site, Resistance, Length (bp),
+Quantity, Prep, and the starting stage. Insert Sequence and every column after
+it are left empty: the pipeline fills those as the job advances.
+
+| Layer | File |
+|---|---|
+| Form | `src/app/(app)/job-log/new/page.tsx` |
+| Field list | `src/lib/job-log-fields.ts` |
+| Server actions | `src/app/actions/job-log.ts` |
+| Write path | `python_tools/job_log.py` |
+| Bridge actions | `create_job_log_row`, `fetch_stages` |
+
+The write path validates the Work No. (required, must be new), the stage (must be
+canonical), Length (bp) (a whole number), and Order Date (`YYYY-MM-DD`), and
+commits the insert in one transaction.
 
 ## Data model
 

@@ -255,11 +255,17 @@ def query_data(log_type, table_name, filters=None):
             df = conn.execute(sql, params).df()
         else:
             df = conn.execute(sql).df()
-        
+
         # Handle empty df
         if df.empty:
             return []
-            
+
+        # NULL must become None, not NaN. A pandas float NaN in a text
+        # column serializes as bare `NaN`, which is NOT valid JSON and
+        # makes the client's JSON.parse throw — taking down the whole
+        # payload. run_query already does this; query_data must too.
+        df = df.astype(object).where(df.notna(), None)
+
         return df.to_dict(orient='records')
     except Exception as e:
         print(f"Query error on {full_table_name}: {str(e)}", file=sys.stderr)

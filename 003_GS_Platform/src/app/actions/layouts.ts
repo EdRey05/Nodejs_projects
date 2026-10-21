@@ -17,8 +17,10 @@ export async function fetchEligibleJobs(): Promise<{
     const ineligible: any[] = [];
     for (const r of rows) {
         const stage = String(r.stage ?? "");
-        const blocked =
-            /^0\./.test(stage) || /^(cancel|canceled|cancelled|moved|shipped)/i.test(stage);
+        // Lifecycle states sit OUTSIDE the pipeline and block layout work.
+        // A '0.' prefix does NOT mean cancelled: '0. Onboarding' is stage 0,
+        // a real pipeline stage, so only the explicit words block.
+        const blocked = /^(cancel|canceled|cancelled|moved|shipped)/i.test(stage);
         if (blocked) ineligible.push({ work_no: r.work_no, stage });
         else
             eligible.push({

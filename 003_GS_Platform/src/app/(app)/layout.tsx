@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AppIcon } from '@/components/icons';
-import { FlaskConical, User, Settings, Home, GitFork, Wrench, Code, FileText, ChevronsUpDown, UploadCloud, Hash, ClipboardList, Dna, PackageCheck } from 'lucide-react';
+import { FlaskConical, User, Settings, Home, GitFork, Wrench, Code, FileText, ChevronsUpDown, UploadCloud, Hash, ClipboardList, Dna, PackageCheck, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -151,6 +151,14 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 <Link href="/job-log">
                   <FileText />
                   <span>Job Log</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/job-log/new'} tooltip="New Job">
+                <Link href="/job-log/new">
+                  <Plus />
+                  <span>New Job</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

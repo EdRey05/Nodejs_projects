@@ -1,0 +1,18 @@
+{
+  "notes": "Canonical job-stage vocabulary for the Gene Synthesis Platform. Read by the Python bridge (python_tools/job_log.py) and by the frontend (src/lib/stages.ts) so the two never drift. Stage 0 is where a new job enters the pipeline; stages 1-12 are the pipeline in order. The 'timeline' values are the BBI turnaround times from the in-house progress workbook's Stages sheet. Lifecycle states that sit OUTSIDE the pipeline (cancelled, moved to Sg, shipped) are NOT stages and are not listed here - the Job Log filters them as categories.",
+  "stages": [
+    { "number": 0, "label": "0. Onboarding", "timeline": "" },
+    { "number": 1, "label": "1. Synthesizing Oligos", "timeline": "3.5-4 weeks" },
+    { "number": 2, "label": "2. Amplification PCR", "timeline": "3 weeks" },
+    { "number": 3, "label": "3. Fragment Assembly", "timeline": "3 weeks" },
+    { "number": 4, "label": "4. Fragment Sequencing", "timeline": "3 weeks" },
+    { "number": 5, "label": "5. Correcting Fragment Errors", "timeline": "3-4 weeks" },
+    { "number": 6, "label": "6. Vector Insertion", "timeline": "2.5 weeks" },
+    { "number": 7, "label": "7. Selecting Clones", "timeline": "2.5 weeks" },
+    { "number": 8, "label": "8. First Sequencing Round", "timeline": "2 weeks" },
+    { "number": 9, "label": "9. Correcting Gene Errors", "timeline": "1.5-2.5 weeks" },
+    { "number": 10, "label": "10. Final Sequencing Round", "timeline": "1.5 weeks" },
+    { "number": 11, "label": "11. QC and Prep", "timeline": "~0.5-1 weeks" },
+    { "number": 12, "label": "12. Completed - Preparing for Shipment", "timeline": "" }
+  ]
+}
