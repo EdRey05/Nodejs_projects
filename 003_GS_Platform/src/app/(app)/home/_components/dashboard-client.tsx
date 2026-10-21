@@ -41,13 +41,13 @@ export function DashboardClient() {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 p-4">
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2"><Dna className="h-4 w-4" /> Gene Tracker</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Dna className="h-4 w-4" /> Job Log</CardTitle>
           <CardDescription>All work numbers</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-3xl font-semibold">{loading ? '…' : data?.gene_tracker_total ?? 0}</p>
+          <p className="text-3xl font-semibold">{loading ? '…' : data?.job_log_total ?? 0}</p>
           <Button asChild variant="ghost" size="sm" className="mt-2 -ml-2">
-            <Link href="/gene-synthesis-progress">Open tracker <ArrowRight className="ml-1 h-3 w-3" /></Link>
+            <Link href="/job-log">Open job log <ArrowRight className="ml-1 h-3 w-3" /></Link>
           </Button>
         </CardContent>
       </Card>

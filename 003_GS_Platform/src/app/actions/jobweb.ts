@@ -72,13 +72,24 @@ export async function readReferencePreview(path: string): Promise<{ success: boo
 export interface JobLogRow {
   work_no: string;
   bbi_id: string | null;
+  order_date: string | null;
+  so: string | null;
   gene_name: string | null;
   vector: string | null;
   cloning_site: string | null;
-  synthesis_progress: string | null;
-  qc_status: string | null;
+  resistance: string | null;
+  length_bp: number | null;
+  quantity: string | null;
+  prep: string | null;
+  stage: string | null;
+  insert_sequence: string | null;
+  final_vector_sequence: string | null;
   plasmid_no: string | null;
-  shipped: string | null;
+  tube_id: string | null;
+  host: string | null;
+  temperature: string | null;
+  competent_cells: string | null;
+  notes: string | null;
 }
 
 export interface ShipmentRow {
@@ -105,7 +116,7 @@ export interface QcRow {
 
 export async function fetchJobLog(): Promise<FetchResult<JobLogRow>> {
   return query<JobLogRow>(
-    'SELECT work_no, bbi_id, gene_name, vector, cloning_site, synthesis_progress, qc_status, plasmid_no, shipped FROM job_log_rows ORDER BY work_no'
+    'SELECT work_no, bbi_id, order_date, so, gene_name, vector, cloning_site, resistance, length_bp, quantity, prep, stage, insert_sequence, final_vector_sequence, plasmid_no, tube_id, host, temperature, competent_cells, notes FROM job_log ORDER BY work_no'
   );
 }
 

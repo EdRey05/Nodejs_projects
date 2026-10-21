@@ -36,7 +36,7 @@ export async function loadDatabaseFile(logType: string): Promise<ArrayBuffer | n
 
 export async function getDuckDBPath() {
   await ensureDataDir();
-  return path.join(DATA_DIR, 'GeneSyn_db.duckdb');
+  return path.join(DATA_DIR, 'GeneSyn_db_v2.duckdb');
 }
 
 function logTypeDir(logType: string) {

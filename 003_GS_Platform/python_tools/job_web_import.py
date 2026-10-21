@@ -1,10 +1,10 @@
-"""P8 job web importers — all FK-wired to gene_tracker_data (the spine).
+"""P8 job web importers — all FK-wired to job_log (the spine).
 
 Ed's operating rules (2026-10-04):
-- gene_tracker_data AS ALREADY IMPORTED (262 WOs) is the spine / job log truth.
+- job_log AS ALREADY IMPORTED (262 WOs) is the spine / job log truth.
 - Subset rule: rows without a resolvable work_no are EXCLUDED and reported,
   never inserted. This is what keeps "start to end" coherent samples only.
-- job_log_rows = SQL VIEW over gene_tracker_data (no separate table).
+- job_log_rows = SQL VIEW over job_log (no separate table).
 - Dry-run default; real writes only behind explicit consent + fresh backup.
 - Table shapes follow the canonical pilot pipeline (Databases/03_import_fragments.py
   + Workflows/ligation_layout.py):
@@ -170,7 +170,7 @@ def ensure_job_web_objects():
             conn.execute(f'CREATE TABLE IF NOT EXISTS {name} {cols}')
         conn.execute(
             'CREATE OR REPLACE VIEW job_log_rows AS '
-            'SELECT rowid AS jt_rowid, * FROM gene_tracker_data'
+            'SELECT rowid AS jt_rowid, * FROM job_log'
         )
         # FK join helper: suffix variants (XP1610045A) resolve to their spine
         # base (XP1610045); non-spine keys (old families) resolve NULL.
@@ -178,8 +178,8 @@ def ensure_job_web_objects():
             'CREATE OR REPLACE MACRO spine_of(k) AS '
             'CASE '
             'WHEN k IS NULL THEN NULL '
-            'WHEN EXISTS (SELECT 1 FROM gene_tracker_data g WHERE g.work_no = k) THEN k '
-            'WHEN EXISTS (SELECT 1 FROM gene_tracker_data g WHERE g.work_no = left(k, length(k)-1)) '
+            'WHEN EXISTS (SELECT 1 FROM job_log g WHERE g.work_no = k) THEN k '
+            'WHEN EXISTS (SELECT 1 FROM job_log g WHERE g.work_no = left(k, length(k)-1)) '
             'THEN left(k, length(k)-1) '
             'ELSE NULL END'
         )
@@ -190,7 +190,7 @@ def ensure_job_web_objects():
 
 
 def _spine(conn):
-    return {r[0] for r in conn.execute('SELECT work_no FROM gene_tracker_data').fetchall()}
+    return {r[0] for r in conn.execute('SELECT work_no FROM job_log').fetchall()}
 
 
 def _base_candidates(name):
@@ -258,7 +258,7 @@ def import_idt(args: dict) -> dict:
     - 'PCR Fragments' sheet -> pcr_fragments (plasmid_no = Position col,
       concentration included) per the canonical pilot mapping.
     - 'Pending Task' = exception log: counted, reported, not imported.
-    - Subset rule: gene/work name must resolve to gene_tracker_data.work_no
+    - Subset rule: gene/work name must resolve to job_log.work_no
       (exact or suffix-stripped base). Everything else excluded + reported.
     """
     xlsx = args.get('xlsx_path') or IDT_LOG
@@ -430,7 +430,7 @@ def import_primer_addon(args: dict) -> dict:
     """Import Primer Log 'input addon' (19 job rows) + 'Obsolete input
     addon(completed)' (1,560 historical rows) -> primer_input_addon.
 
-    JobID-keyed; FK = job_id -> gene_tracker_data.work_no (subset rule:
+    JobID-keyed; FK = job_id -> job_log.work_no (subset rule:
     unresolvable JobIDs excluded + reported). obsolete flag marks rows from the
     completed sheet. Dedupe by (job_id, obsolete)."""
     xlsx = args.get('xlsx_path') or PRIMER_LOG
@@ -534,7 +534,7 @@ def import_reference_files(args: dict) -> dict:
         conn = get_connection()
         spine = _spine(conn)
         gene_names = {r[0] for r in conn.execute(
-            'SELECT DISTINCT gene_name FROM gene_tracker_data WHERE gene_name IS NOT NULL').fetchall()}
+            'SELECT DISTINCT gene_name FROM job_log WHERE gene_name IS NOT NULL').fetchall()}
         keys = spine | gene_names
 
         names = sorted(os.listdir(ref_dir)) if os.path.isdir(ref_dir) else []
@@ -796,7 +796,7 @@ def import_shipment_qc(args: dict) -> dict:
     """Import 12/Shipment and QC Log.xlsx -> shipment_rows (9) + qc_rows (11).
 
     JobLog_Row_Input + Label_Output are NOT imported — the spine is
-    gene_tracker_data (Ed: the app's job log = the imported tracker; the live
+    job_log (Ed: the app's job log = the imported tracker; the live
     sheet deletes completed rows with poor consistency). Shipment/QC rows join
     by Job ID == work_no (subset rule; unresolvable excluded + reported).
     Also reports the join trial to reference_files.gene_name.

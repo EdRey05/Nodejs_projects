@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { ExportLogButton } from '@/components/export-log-button';
 import { Loader2 } from 'lucide-react';
 import {
@@ -69,7 +68,7 @@ export default function ShippingQcPage() {
         <h1 className="text-2xl font-semibold">Shipping &amp; QC</h1>
         <div className="flex items-center gap-2">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search work no / BBI ID / gene..." className="w-72" />
-          <ExportLogButton table={{ sql: 'SELECT work_no, bbi_id, gene_name, vector, cloning_site, synthesis_progress, qc_status, plasmid_no, shipped FROM job_log_rows ORDER BY work_no', sheet: 'Job Log', file: 'Shipping_QC' }} />
+          <ExportLogButton table={{ sql: 'SELECT work_no, bbi_id, order_date, so, gene_name, vector, cloning_site, resistance, length_bp, quantity, prep, stage, insert_sequence, final_vector_sequence, plasmid_no, tube_id, host, temperature, competent_cells, notes FROM job_log ORDER BY work_no', sheet: 'Job Log', file: 'Shipping_QC' }} />
         </div>
       </div>
       {loading && <p className="text-muted-foreground"><Loader2 className="inline h-4 w-4 animate-spin" /> Loading job log...</p>}
@@ -79,7 +78,7 @@ export default function ShippingQcPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Job Log ({filteredJobs.length} rows)</CardTitle>
-              <CardDescription>Spine = imported Gene Tracker; QC Status shown per row. Click a row to see its shipment/QC detail.</CardDescription>
+              <CardDescription>Spine = the Job Log; Stage shown per row. Click a row to see its shipment/QC detail.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="max-h-[40vh] overflow-auto">
@@ -90,10 +89,10 @@ export default function ShippingQcPage() {
                       <TableHead>BBI ID</TableHead>
                       <TableHead>Gene</TableHead>
                       <TableHead>Vector</TableHead>
-                      <TableHead>Progress</TableHead>
-                      <TableHead>QC Status</TableHead>
+                      <TableHead>Stage</TableHead>
+                      <TableHead>Prep</TableHead>
                       <TableHead>Plasmid No</TableHead>
-                      <TableHead>Shipped</TableHead>
+                      <TableHead>Tube ID</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -107,14 +106,10 @@ export default function ShippingQcPage() {
                         <TableCell className="text-xs">{j.bbi_id}</TableCell>
                         <TableCell className="text-xs">{j.gene_name}</TableCell>
                         <TableCell className="text-xs">{j.vector}</TableCell>
-                        <TableCell className="text-xs">{j.synthesis_progress}</TableCell>
-                        <TableCell>
-                          {j.qc_status ? (
-                            <Badge variant={j.qc_status.toLowerCase().includes('reject') ? 'destructive' : 'secondary'}>{j.qc_status}</Badge>
-                          ) : <span className="text-muted-foreground">—</span>}
-                        </TableCell>
+                        <TableCell className="text-xs">{j.stage}</TableCell>
+                        <TableCell className="text-xs">{j.prep}</TableCell>
                         <TableCell className="font-mono text-xs">{j.plasmid_no}</TableCell>
-                        <TableCell className="text-xs">{j.shipped}</TableCell>
+                        <TableCell className="font-mono text-xs">{j.tube_id}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

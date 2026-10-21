@@ -260,14 +260,14 @@ def action_fetch_extraction_wells(data: dict) -> dict:
     return {"success": True, "wells": wells}
 
 
-def action_fetch_gene_tracker(_data: dict) -> dict:
-    """Fetch all gene tracker data from DuckDB."""
+def action_fetch_job_log(_data: dict) -> dict:
+    """Fetch all job log rows from DuckDB."""
     if not os.path.exists(db_ops.DB_PATH):
         return {"success": False, "message": "Database not initialized."}
 
-    data = db_ops.query_data('gene_tracker', 'data')
+    data = db_ops.query_data('job_log', 'data')
     if not data:
-        return {"success": False, "message": "No gene tracker data found."}
+        return {"success": False, "message": "No job log data found."}
 
     return {"success": True, "data": data}
 
@@ -305,10 +305,10 @@ def action_bulk_import(data: dict) -> dict:
     return _bulk_import(data)
 
 
-def action_import_gene_tracker(data: dict) -> dict:
-    """Header-verified, work_no-based upsert of a Gene Tracker sheet."""
-    from bulk_import import import_gene_tracker as _import_gt
-    return _import_gt(data)
+def action_import_job_log(data: dict) -> dict:
+    """Header-verified, work_no-based upsert of a Job Log sheet."""
+    from bulk_import import import_job_log as _import_jl
+    return _import_jl(data)
 
 
 def action_import_idt(data: dict) -> dict:
@@ -432,9 +432,9 @@ ACTIONS = {
     'parse_and_persist': action_parse_and_persist,
     'fetch': action_fetch,
     'fetch_extraction_wells': action_fetch_extraction_wells,
-    'fetch_gene_tracker': action_fetch_gene_tracker,
+    'fetch_job_log': action_fetch_job_log,
     'bulk_import': action_bulk_import,
-    'import_gene_tracker': action_import_gene_tracker,
+    'import_job_log': action_import_job_log,
     'import_master_summary': action_import_master_summary,
     'import_vector_db': action_import_vector_db,
     'lookup_vector': action_lookup_vector,

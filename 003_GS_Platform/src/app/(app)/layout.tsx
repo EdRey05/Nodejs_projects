@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { DatabaseContextProvider, useDatabase } from './_context/DatabaseContext';
 import { LOG_TYPES, LogType } from '@/lib/types';
-import { fetchPersistedData, fetchGeneTracker, fetchSeqPrep, fetchSequencingLogs } from '@/app/actions';
+import { fetchPersistedData, fetchJobLog, fetchSeqPrep, fetchSequencingLogs } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
@@ -49,7 +49,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         'colony-pcr': 'Colony PCR Log',
         'dna-extraction': 'DNA Extraction Log',
         'dna-quantification': 'DNA Quantification Log',
-        'gene-synthesis-progress': 'Gene Tracker',
+        'job-log': 'Job Log',
         'sequencing-prep': 'Sequencing Prep',
         'sequencing-analysis': 'Sequencing Analysis',
       };
@@ -84,13 +84,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             toast({ variant: 'destructive', title: 'Initial Load Failed', description: `Could not load ${logType}: ${result.message}` });
           }
         }),
-        // Load Gene Tracker data
+        // Load Job Log data
         (async () => {
-          const result = await fetchGeneTracker();
+          const result = await fetchJobLog();
           if (result.success && result.data) {
-            setDatabase('Gene Tracker', {
+            setDatabase('Job Log', {
               buffer: null,
-              name: 'DuckDB: Gene Tracker',
+              name: 'DuckDB: Job Log',
               payload: { data: result.data },
             });
           }
@@ -146,11 +146,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === '/gene-synthesis-progress'} tooltip="Gene Tracker">
-                <Link href="/gene-synthesis-progress">
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/job-log'} tooltip="Job Log">
+                <Link href="/job-log">
                   <FileText />
-                  <span>Gene Tracker</span>
+                  <span>Job Log</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

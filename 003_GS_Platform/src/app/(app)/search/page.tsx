@@ -54,19 +54,19 @@ export default function SearchPage() {
                 <p className="rounded border border-red-600/40 bg-red-500/10 p-3 text-sm">{result.message}</p>
             )}
 
-            {result?.gene_tracker && (
+            {result?.job_log && (
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-base">{result.gene_tracker.work_no}</CardTitle>
+                        <CardTitle className="text-base">{result.job_log.work_no}</CardTitle>
                         <CardDescription>
-                            {result.gene_tracker.gene_name} · {String(result.gene_tracker.bbi_id ?? '')} · {result.gene_tracker.vector} · {result.gene_tracker.cloning_site} · {result.gene_tracker.resistance}
+                            {result.job_log.gene_name} · {String(result.job_log.bbi_id ?? '')} · {result.job_log.vector} · {result.job_log.cloning_site} · {result.job_log.resistance}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-1 text-xs text-muted-foreground sm:grid-cols-4">
-                        <div>Length: {String(result.gene_tracker.length_bp ?? '—')}</div>
-                        <div>Prep: {String(result.gene_tracker.prep ?? '—')}</div>
-                        <div>Host: {String(result.gene_tracker.host ?? '—')}</div>
-                        <div>Status: {String(result.gene_tracker.synthesis_progress ?? '—')}</div>
+                        <div>Length: {String(result.job_log.length_bp ?? '—')}</div>
+                        <div>Prep: {String(result.job_log.prep ?? '—')}</div>
+                        <div>Host: {String(result.job_log.host ?? '—')}</div>
+                        <div>Stage: {String(result.job_log.stage ?? '—')}</div>
                     </CardContent>
                 </Card>
             )}

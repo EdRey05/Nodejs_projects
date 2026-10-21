@@ -1,7 +1,7 @@
 // Barrel re-export for all server actions.
 // Frontend files import from "@/app/actions" which resolves to this file.
 
-export { previewFile, processAndPersist, fetchPersistedData, fetchExtractionWells, fetchGeneTracker, fetchSeqPrep, fetchSequencingLogs } from './logs';
+export { previewFile, processAndPersist, fetchPersistedData, fetchExtractionWells, fetchJobLog, fetchSeqPrep, fetchSequencingLogs } from './logs';
 export { initializeDuckDB, runDataMigration, runSqlQuery, exportLogToExcel, downloadDataZip } from './database';
 export { runPythonScript } from './python-bridge';
 export {

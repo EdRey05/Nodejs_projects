@@ -91,7 +91,7 @@ export function LigationLayoutClient() {
         <div className="grid gap-4 lg:grid-cols-4">
             <Card className="lg:col-span-2">
                 <CardHeader>
-                    <CardTitle>Jobs from Gene Tracker</CardTitle>
+                    <CardTitle>Jobs from Job Log</CardTitle>
                     <CardDescription>
                         {loading ? "Loading…" : `${jobs.length} eligible (shipped/canceled/moved hidden${ineligibleCount ? ` — ${ineligibleCount} filtered` : ""}). Pick in order; order = plate row order.`}
                     </CardDescription>

@@ -5,7 +5,7 @@ import yaml
 import json
 
 SCHEMA_PATH = os.path.join('python_tools', 'schema.yaml')
-DB_PATH = os.path.join('data', 'GeneSyn_db.duckdb')
+DB_PATH = os.path.join('data', 'GeneSyn_db_v2.duckdb')
 DATA_DIR = 'data'
 
 def get_connection():

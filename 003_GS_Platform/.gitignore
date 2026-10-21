@@ -35,3 +35,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local database files (the app creates these at runtime)
+data/*.duckdb
+data/*.duckdb.wal
+data/obsolete/

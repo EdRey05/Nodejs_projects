@@ -265,7 +265,9 @@ def lookup_vector(args: dict) -> dict:
         return {"success": False, "message": "Missing 'vector'."}
 
     os.makedirs(os.path.dirname(db_ops.DB_PATH), exist_ok=True)
-    conn = db_ops.get_connection()
+    conn = db_ops.get_read_connection()
+    if conn is None:
+        return {"success": False, "message": "Database not initialized."}
     try:
         tbl = conn.execute(
             "SELECT count(*) FROM information_schema.tables WHERE table_name='vector_db'"

@@ -74,16 +74,16 @@ class LayoutError(Exception):
 # ---------------------------------------------------------------------------
 
 def fetch_job_log(job_ids: list) -> dict:
-    """job_log stand-in: reads gene_tracker_data (work_no, bbi_id, vector,
+    """job_log stand-in: reads job_log (work_no, bbi_id, vector,
     cloning_site, resistance, length_bp)."""
     if not job_ids:
         return {}
-    conn = db_ops.get_connection()
+    conn = db_ops.get_read_connection()
     try:
         placeholders = ','.join(['?'] * len(job_ids))
         rows = conn.execute(
             'SELECT work_no, bbi_id, vector, cloning_site, resistance, length_bp '
-            f'FROM gene_tracker_data WHERE work_no IN ({placeholders})',
+            f'FROM job_log WHERE work_no IN ({placeholders})',
             job_ids,
         ).fetchall()
     finally:
@@ -109,7 +109,7 @@ def _table_exists(conn, name: str) -> bool:
 
 def fetch_pcr_fragments(job_ids: list) -> dict:
     """pcr_fragments reads (Phase 5 tables); returns {} when the table is absent."""
-    conn = db_ops.get_connection()
+    conn = db_ops.get_read_connection()
     try:
         if not _table_exists(conn, 'pcr_fragments'):
             return {}
@@ -136,7 +136,7 @@ def fetch_idt_fragments(job_ids: list) -> dict:
     """idt_fragments reads (Phase 5 tables); returns {} when absent."""
     if not job_ids:
         return {}
-    conn = db_ops.get_connection()
+    conn = db_ops.get_read_connection()
     try:
         if not _table_exists(conn, 'idt_fragments'):
             return {}
@@ -175,7 +175,7 @@ def load_vector_lookups() -> tuple:
     resistance = {}
     length_map = {}
     digested = {}
-    conn = db_ops.get_connection()
+    conn = db_ops.get_read_connection()
     try:
         if not _table_exists(conn, 'vector_db'):
             raise LayoutError('vector_db table not found — run the import_vector_db action first.')
@@ -261,7 +261,7 @@ def build_ligation_rows(job_ids, job_log_rows, pcr_frags, idt_frags,
 
     if missing_from_log:
         raise LayoutError(
-            'These Job IDs are missing from gene_tracker_data (job log):\n  - '
+            'These Job IDs are missing from job_log (job log):\n  - '
             + '\n  - '.join(sorted(missing_from_log))
             + '\nProvide a manual_vector override for each, or remove them from the request.'
         )
@@ -556,7 +556,7 @@ def import_primer_log(args: dict) -> dict:
 def fetch_primer_map(args: dict) -> dict:
     """Bridge action: {job_id: primer_pair} — prefers the primers table, falls
     back to reading the Primer Log xlsx directly."""
-    conn = db_ops.get_connection()
+    conn = db_ops.get_read_connection()
     try:
         if _table_exists(conn, 'primers'):
             rows = conn.execute(
@@ -609,7 +609,7 @@ def _colonies_from_ligation_entries(entries: list) -> list:
 
 def _read_ligation_entries_from_db(entry_codes: list) -> list:
     """Read ligation entries (data rows) from DuckDB by index name."""
-    conn = db_ops.get_connection()
+    conn = db_ops.get_read_connection()
     try:
         entries = []
         for code in entry_codes:
@@ -1044,7 +1044,7 @@ def build_extraction_layout(args: dict) -> dict:
         wells = [str(w).strip().upper() for w in args['wells'] if str(w).strip()]
     elif args.get('source_entry_code'):
         code = args['source_entry_code']
-        conn = db_ops.get_connection()
+        conn = db_ops.get_read_connection()
         try:
             idx = conn.execute('SELECT id FROM colony_pcr_index WHERE name=?', [code]).fetchone()
             if not idx:

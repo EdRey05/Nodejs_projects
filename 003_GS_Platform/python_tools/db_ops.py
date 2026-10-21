@@ -4,21 +4,142 @@ import sys
 import json
 import os
 
-DB_PATH = os.path.join('data', 'GeneSyn_db.duckdb')
+# --- Database locations -------------------------------------------------
+# The app is being rebuilt around a fresh, synthetic-data-only database.
+# The legacy production database is never deleted: on first use it is
+# renamed into data/obsolete/ and the new schema is created from scratch.
+DATA_DIR = 'data'
+DB_FILENAME = 'GeneSyn_db_v2.duckdb'
+LEGACY_DB_FILENAME = 'GeneSyn_db.duckdb'
+OBSOLETE_DIR = os.path.join(DATA_DIR, 'obsolete')
+
+DB_PATH = os.path.join(DATA_DIR, DB_FILENAME)
+LEGACY_DB_PATH = os.path.join(DATA_DIR, LEGACY_DB_FILENAME)
 SCHEMA_PATH = os.path.join('python_tools', 'schema.yaml')
 
+_bootstrap_done = False
+_schema_cache = None
+
+
+# --- Schema helpers -----------------------------------------------------
+def load_schema():
+    """Load schema.yaml once and cache it."""
+    global _schema_cache
+    if _schema_cache is None:
+        with open(SCHEMA_PATH, 'r') as f:
+            _schema_cache = yaml.safe_load(f)
+    return _schema_cache
+
+
+def resolve_table_name(log_type, table_name):
+    """Physical table name for a (log_type, table_name) pair.
+
+    Default is "{log_type}_{table_name}". A schema group may override it
+    with a `table:` key — the job_log group maps to the physical table
+    `job_log` so the app's first table keeps a clean, unprefixed name.
+    """
+    group = load_schema().get(log_type)
+    if isinstance(group, dict) and group.get('table'):
+        return group['table']
+    return f"{log_type}_{table_name}"
+
+
+def schema_columns(log_type, table_name):
+    """Column definitions for a (log_type, table_name) pair."""
+    group = load_schema().get(log_type)
+    if not isinstance(group, dict):
+        return []
+    return group.get(table_name) or []
+
+
+# --- Bootstrap ----------------------------------------------------------
+def _unique_obsolete_path(legacy_path):
+    """Pick a free path inside the obsolete folder (never overwrite)."""
+    base = os.path.basename(legacy_path)
+    stem, ext = os.path.splitext(base)
+    candidate = os.path.join(OBSOLETE_DIR, base)
+    n = 2
+    while os.path.exists(candidate):
+        candidate = os.path.join(OBSOLETE_DIR, f"{stem} ({n}){ext}")
+        n += 1
+    return candidate
+
+
+def _bootstrap_db():
+    """Rename the legacy database to obsolete and create the new empty one.
+
+    Idempotent: the rename happens only once, and only when the new
+    database does not exist yet. The legacy file is moved, never deleted.
+    """
+    global _bootstrap_done
+    if _bootstrap_done:
+        return
+    _bootstrap_done = True
+
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    if not os.path.exists(DB_PATH):
+        if os.path.exists(LEGACY_DB_PATH):
+            os.makedirs(OBSOLETE_DIR, exist_ok=True)
+            target = _unique_obsolete_path(LEGACY_DB_PATH)
+            os.replace(LEGACY_DB_PATH, target)
+            print(f"Legacy database moved to obsolete: {target}", file=sys.stderr)
+        init_db()
+
+
 def get_connection():
+    """Read-write connection (for imports, schema changes, inserts)."""
+    _bootstrap_db()
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     return duckdb.connect(DB_PATH)
 
+
+def get_read_connection():
+    """Read-only connection.
+
+    DuckDB refuses a second read-WRITE connection to the same file while
+    another process holds it, which breaks the app's parallel initial load
+    (the layout fires several bridge calls at once). A read-only connection
+    has no such restriction, so every read path uses this.
+    """
+    _bootstrap_db()
+    if not os.path.exists(DB_PATH):
+        return None
+    try:
+        return duckdb.connect(DB_PATH, read_only=True)
+    except Exception as e:
+        print(f"Read-only connection failed: {e}", file=sys.stderr)
+        return None
+
+
+def create_core_views(conn):
+    """Views/macros the app's SQL contract expects, over the job_log table."""
+    conn.execute(
+        'CREATE OR REPLACE VIEW job_log_rows AS '
+        'SELECT rowid AS jt_rowid, * FROM job_log'
+    )
+    conn.execute(
+        'CREATE OR REPLACE MACRO spine_of(k) AS '
+        'CASE '
+        'WHEN k IS NULL THEN NULL '
+        'WHEN EXISTS (SELECT 1 FROM job_log g WHERE g.work_no = k) THEN k '
+        'WHEN EXISTS (SELECT 1 FROM job_log g WHERE g.work_no = left(k, length(k)-1)) '
+        'THEN left(k, length(k)-1) '
+        'ELSE NULL END'
+    )
+
+
 def init_db():
-    with open(SCHEMA_PATH, 'r') as f:
-        schema = yaml.safe_load(f)
+    schema = load_schema()
 
     conn = get_connection()
     for log_type, tables in schema.items():
+        if not isinstance(tables, dict):
+            continue
         for table_name, columns in tables.items():
-            full_table_name = f"{log_type}_{table_name}"
+            if table_name == 'table':
+                continue
+            full_table_name = resolve_table_name(log_type, table_name)
             cols_def = []
             for col in columns:
                 col_name = col["name"]
@@ -30,6 +151,7 @@ def init_db():
 
             sql = f"CREATE TABLE IF NOT EXISTS {full_table_name} ({', '.join(cols_def)})"
             conn.execute(sql)
+    create_core_views(conn)
     conn.close()
 
 def insert_data(log_type, table_name, data):
@@ -63,8 +185,7 @@ def insert_data(log_type, table_name, data):
         conn.close()
 
 def clear_log_type_data(log_type):
-    with open(SCHEMA_PATH, 'r') as f:
-        schema = yaml.safe_load(f)
+    schema = load_schema()
 
     if log_type not in schema:
         return
@@ -72,7 +193,9 @@ def clear_log_type_data(log_type):
     conn = get_connection()
     try:
         for table_name in schema[log_type].keys():
-            full_table_name = f"{log_type}_{table_name}"
+            if table_name == 'table':
+                continue
+            full_table_name = resolve_table_name(log_type, table_name)
             # Check if table exists
             exists = conn.execute(f"SELECT count(*) FROM information_schema.tables WHERE table_name = '{full_table_name}'").fetchone()[0]
             if exists > 0:
@@ -87,8 +210,7 @@ def export_to_excel(log_type):
     import io
     import base64
 
-    with open(SCHEMA_PATH, 'r') as f:
-        schema = yaml.safe_load(f)
+    schema = load_schema()
 
     if log_type not in schema:
         return None
@@ -96,6 +218,8 @@ def export_to_excel(log_type):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         for table_name in schema[log_type].keys():
+            if table_name == 'table':
+                continue
             data = query_data(log_type, table_name)
             if data:
                 df = pd.DataFrame(data)
@@ -108,8 +232,10 @@ def export_to_excel(log_type):
     return base64.b64encode(excel_data).decode('utf-8')
 
 def query_data(log_type, table_name, filters=None):
-    conn = get_connection()
-    full_table_name = f"{log_type}_{table_name}"
+    conn = get_read_connection()
+    if conn is None:
+        return []
+    full_table_name = resolve_table_name(log_type, table_name)
     
     # Check table existence
     res = conn.execute(f"SELECT count(*) FROM information_schema.tables WHERE table_name = '{full_table_name}'").fetchone()
@@ -150,7 +276,8 @@ def run_query(sql):
         return {"error": "Only SELECT, SHOW, DESCRIBE, PRAGMA, EXPLAIN, or WITH queries are allowed."}
 
     if not os.path.exists(DB_PATH):
-        return {"error": f"Database file not found at {DB_PATH}"}
+        # First read of a fresh checkout: create the database + schema now.
+        _bootstrap_db()
 
     try:
         conn = duckdb.connect(DB_PATH, read_only=True)
@@ -164,7 +291,7 @@ def run_query(sql):
 
 def get_next_id(log_type, table_name, id_col='id'):
     conn = get_connection()
-    full_table_name = f"{log_type}_{table_name}"
+    full_table_name = resolve_table_name(log_type, table_name)
     try:
         res = conn.execute(f"SELECT MAX({id_col}) FROM {full_table_name}").fetchone()
         if res[0] is None:

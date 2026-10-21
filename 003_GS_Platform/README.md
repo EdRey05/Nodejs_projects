@@ -4,7 +4,7 @@ A local lab data application for viewing daily gene-synthesis logs, building Exc
 
 ## Current scope — v0.0.5
 
-- **Gene Tracker:** searchable master job data, used as the spine for job relationships.
+- **Job Log:** the app's first table and the spine for job relationships — searchable, sortable and filterable master job data.
 - **Log review and upload:** Ligation, Colony PCR, DNA Extraction, and DNA Quantification, with tables, plate views, images, and carousel navigation.
 - **Sequencing:** preparation and analysis views with Python importers.
 - **Layout creation:** Ligation, Colony PCR, and extraction workbook generators, plus an interactive plate designer.
@@ -13,6 +13,40 @@ A local lab data application for viewing daily gene-synthesis logs, building Exc
 - **Dashboard and developer tools:** database counts, SQL inspection, exports, and a widget playground.
 
 The Pipelines section remains a placeholder. There is no longer a separate Nanodrop page; Nanodrop parsing remains in the backend. Features are under active development and are not all covered by automated tests.
+
+## Data model
+
+The Job Log is the app's first table. It is defined in `python_tools/schema.yaml`
+under the `job_log` group and maps to the physical DuckDB table `job_log`:
+
+| Column | Type | Notes |
+|---|---|---|
+| `work_no` | TEXT | Primary job identifier |
+| `bbi_id` | TEXT | Internal BBI identifier |
+| `order_date` | TEXT | ISO date |
+| `so` | TEXT | Sales order |
+| `gene_name` | TEXT | |
+| `vector` | TEXT | |
+| `cloning_site` | TEXT | |
+| `resistance` | TEXT | Antibiotic marker |
+| `length_bp` | INTEGER | Insert length in bp |
+| `quantity` | TEXT | Plasmid quantity |
+| `prep` | TEXT | Preparation form |
+| `stage` | TEXT | Pipeline stage |
+| `insert_sequence` | TEXT | |
+| `final_vector_sequence` | TEXT | |
+| `plasmid_no` | TEXT | |
+| `tube_id` | TEXT | |
+| `host` | TEXT | |
+| `temperature` | TEXT | Growth temperature |
+| `competent_cells` | TEXT | |
+| `notes` | TEXT | |
+
+`job_log` is the job spine; `job_log_rows` is a view over it. Schema objects are defined both in `python_tools/schema.yaml` and specialized import modules.
+
+The database file is `data/GeneSyn_db_v2.duckdb`. The previous production database
+(`data/GeneSyn_db.duckdb`) is never deleted — on first use it is renamed into
+`data/obsolete/` and the new database is created empty from the schema.
 
 ## Architecture
 
@@ -38,6 +72,7 @@ DuckDB + local files / downloadable Excel workbooks
 
 ```text
 src/app/(app)/        Pages, shared navigation, database context
+  job-log/            The Job Log table: filters, sorting, column visibility
   logs/              Experimental and sequencing log views, uploader
   layouts/           Ligation, Colony PCR, extraction generators
   plate-designer/    Interactive plate editor
@@ -50,13 +85,11 @@ src/app/actions/     Logs, database, layouts, job web, lookup, dashboard,
                      and Python subprocess wrapper
 python_tools/        Bridge, parsers, imports, layout generation, schema
 python_tools/templates/  Excel output templates
-data/                GeneSyn_db.duckdb and supporting files/images
+data/                GeneSyn_db_v2.duckdb and supporting files/images
 0-Logs/              Source laboratory files
 _electron_sidecar/   Electron launcher and packaging scripts
 docs/                Historical plans (some descriptions are outdated)
 ```
-
-`gene_tracker_data` is the job spine; `job_log_rows` is a view over it. Schema objects are defined both in `python_tools/schema.yaml` and specialized import modules.
 
 ## Local setup
 
@@ -91,7 +124,7 @@ The root `npm run build` script uses POSIX environment-variable syntax; use the 
 
 ### Data and another computer
 
-Keep a backup of `data/GeneSyn_db.duckdb` before imports or migrations. To reproduce the current populated application on another computer, bring the required database, images, templates, and source/reference files in addition to the code. Some import defaults and stored file paths refer to the original machine; adjust them before relying on imports or previews.
+Keep a backup of `data/GeneSyn_db_v2.duckdb` before imports or migrations. To reproduce the current populated application on another computer, bring the required database, images, templates, and source/reference files in addition to the code. Some import defaults and stored file paths refer to the original machine; adjust them before relying on imports or previews.
 
 The generic schema initializer does not populate historical data or establish every specialized job-web object. Do not treat a fresh empty database as equivalent to the populated development database.
 

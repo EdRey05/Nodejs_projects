@@ -1,4 +1,16 @@
-gene_tracker:
+# Gene Synthesis Platform — canonical schema.
+#
+# Each top-level key is a "log type" group. Unless a `table:` override is
+# present, the physical table name is "{log_type}_{table_name}" (see
+# db_ops.resolve_table_name). The `job_log` group overrides it to the
+# physical table `job_log` — the app's first table and the job spine.
+#
+# Column order here IS the table's column order (and the Job Log display
+# order in the UI). Display labels live in the frontend; these names are
+# the snake_case variable/column names used in SQL, Python and TypeScript.
+
+job_log:
+  table: job_log
   data:
     - {name: work_no, type: TEXT}
     - {name: bbi_id, type: TEXT}
@@ -8,29 +20,18 @@ gene_tracker:
     - {name: vector, type: TEXT}
     - {name: cloning_site, type: TEXT}
     - {name: resistance, type: TEXT}
-    - {name: length_bp, type: TEXT}
-    - {name: plasmid_qty, type: TEXT}
+    - {name: length_bp, type: INTEGER}
+    - {name: quantity, type: TEXT}
     - {name: prep, type: TEXT}
-    - {name: synthesis_progress, type: TEXT}
-    - {name: job_id_2, type: TEXT}
-    - {name: internal_progress_notes, type: TEXT}
-    - {name: need_by, type: TEXT}
-    - {name: qc_status, type: TEXT}
+    - {name: stage, type: TEXT}
     - {name: insert_sequence, type: TEXT}
-    - {name: seq_check, type: TEXT}
-    - {name: insert_vector, type: TEXT}
+    - {name: final_vector_sequence, type: TEXT}
     - {name: plasmid_no, type: TEXT}
     - {name: tube_id, type: TEXT}
-    - {name: position_in_box, type: TEXT}
     - {name: host, type: TEXT}
-    - {name: growth_condition_temperature, type: TEXT}
+    - {name: temperature, type: TEXT}
     - {name: competent_cells, type: TEXT}
-    - {name: od260, type: TEXT}
-    - {name: od280, type: TEXT}
-    - {name: od260_od280, type: TEXT}
-    - {name: conc_ng_ul, type: TEXT}
-    - {name: shipped, type: TEXT}
-    - {name: notes_on_order_shipment, type: TEXT}
+    - {name: notes, type: TEXT}
 
 ligation:
   index:

@@ -6,14 +6,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { FileText, ArrowUpDown, ArrowUp, ArrowDown, Columns3 } from 'lucide-react';
+import { ExportLogButton } from '@/components/export-log-button';
+import { FileText, ArrowUpDown, ArrowUp, ArrowDown, Columns3, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type GeneTrackerRow = Record<string, string>;
+type JobLogRow = Record<string, any>;
 
-// Display-friendly column headers (order matters for table rendering)
-const DISPLAY_COLUMNS: { key: string; label: string }[] = [
+/**
+ * Job Log — the app's first table.
+ *
+ * Column keys are the snake_case DuckDB column names (see
+ * python_tools/schema.yaml, group `job_log`); the labels are the display
+ * names. The order below is the table's column order.
+ */
+const JOB_LOG_COLUMNS: { key: string; label: string }[] = [
   { key: 'work_no', label: 'Work No.' },
   { key: 'bbi_id', label: 'BBI ID' },
   { key: 'order_date', label: 'Order Date' },
@@ -23,37 +31,28 @@ const DISPLAY_COLUMNS: { key: string; label: string }[] = [
   { key: 'cloning_site', label: 'Cloning Site' },
   { key: 'resistance', label: 'Resistance' },
   { key: 'length_bp', label: 'Length (bp)' },
-  { key: 'plasmid_qty', label: 'Plasmid Qty.' },
+  { key: 'quantity', label: 'Quantity' },
   { key: 'prep', label: 'Prep' },
-  { key: 'synthesis_progress', label: 'Synthesis Progress' },
-  { key: 'job_id_2', label: 'Job ID 2' },
-  { key: 'internal_progress_notes', label: 'Progress Notes' },
-  { key: 'need_by', label: 'Need By' },
-  { key: 'qc_status', label: 'QC Status' },
-  { key: 'seq_check', label: 'SEQ Check' },
+  { key: 'stage', label: 'Stage' },
+  { key: 'insert_sequence', label: 'Insert Sequence' },
+  { key: 'final_vector_sequence', label: 'Final Vector Sequence' },
   { key: 'plasmid_no', label: 'Plasmid No.' },
   { key: 'tube_id', label: 'Tube ID' },
-  { key: 'position_in_box', label: 'Position in Box' },
   { key: 'host', label: 'Host' },
-  { key: 'growth_condition_temperature', label: 'Growth Temp.' },
+  { key: 'temperature', label: 'Temperature' },
   { key: 'competent_cells', label: 'Competent Cells' },
-  { key: 'od260', label: 'OD260' },
-  { key: 'od280', label: 'OD280' },
-  { key: 'od260_od280', label: 'OD260/280' },
-  { key: 'conc_ng_ul', label: 'Conc. ng/uL' },
-  { key: 'shipped', label: 'Shipped' },
-  { key: 'notes_on_order_shipment', label: 'Notes' },
+  { key: 'notes', label: 'Notes' },
 ];
 
-// Intentionally exclude long sequences from the table display
-const HIDDEN_COLUMNS = new Set(['insert_sequence', 'insert_vector']);
+// Long sequences are excluded from the table display; they open in the row detail.
+const HIDDEN_COLUMNS = new Set(['insert_sequence', 'final_vector_sequence']);
 
-const VISIBLE_COLUMNS = DISPLAY_COLUMNS.filter(c => !HIDDEN_COLUMNS.has(c.key));
+const VISIBLE_COLUMNS = JOB_LOG_COLUMNS.filter(c => !HIDDEN_COLUMNS.has(c.key));
 
-// --- Filter category definitions ---
-type FilterCategory = 'in_progress' | 'shipped' | 'canceled' | 'moved' | 'other';
+// --- Stage filter categories -------------------------------------------
+type StageCategory = 'in_progress' | 'shipped' | 'canceled' | 'moved' | 'other';
 
-const FILTER_DEFS: { id: FilterCategory; label: string; description: string; color: string; activeColor: string }[] = [
+const STAGE_DEFS: { id: StageCategory; label: string; description: string; color: string; activeColor: string }[] = [
   { id: 'in_progress', label: 'In Progress', description: 'Stages 1-12', color: 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200', activeColor: 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' },
   { id: 'other', label: 'Other', description: 'Ordered, etc.', color: 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200', activeColor: 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700' },
   { id: 'shipped', label: 'Shipped', description: 'Completed & shipped', color: 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200', activeColor: 'bg-green-600 text-white border-green-600 hover:bg-green-700' },
@@ -61,8 +60,8 @@ const FILTER_DEFS: { id: FilterCategory; label: string; description: string; col
   { id: 'moved', label: 'Moved', description: 'Moved to Sg', color: 'bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200', activeColor: 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' },
 ];
 
-function classifyProgress(progress: string): FilterCategory {
-  const p = (progress || '').trim().toLowerCase();
+function classifyStage(stage: string): StageCategory {
+  const p = (stage || '').trim().toLowerCase();
   if (p.includes('shipped')) return 'shipped';
   if (p.startsWith('0.') || p.includes('cancel')) return 'canceled';
   if (p.includes('moved')) return 'moved';
@@ -71,8 +70,8 @@ function classifyProgress(progress: string): FilterCategory {
   return 'other';
 }
 
-// Color badge for the synthesis progress cell
-function progressBadgeClass(category: FilterCategory): string {
+// Color badge for the stage cell
+function stageBadgeClass(category: StageCategory): string {
   switch (category) {
     case 'in_progress': return 'bg-blue-100 text-blue-800';
     case 'shipped': return 'bg-green-100 text-green-800';
@@ -82,16 +81,16 @@ function progressBadgeClass(category: FilterCategory): string {
   }
 }
 
-export default function GeneSynthesisProgressPage() {
+export default function JobLogPage() {
   const { databases } = useDatabase();
-  const data = (databases['Gene Tracker']?.payload?.data as GeneTrackerRow[] | undefined) ?? null;
+  const data = (databases['Job Log']?.payload?.data as JobLogRow[] | undefined) ?? null;
 
   // Default: show In Progress + Other only
-  const [activeFilters, setActiveFilters] = useState<Set<FilterCategory>>(
+  const [activeFilters, setActiveFilters] = useState<Set<StageCategory>>(
     new Set(['in_progress', 'other'])
   );
 
-  const toggleFilter = (id: FilterCategory) => {
+  const toggleFilter = (id: StageCategory) => {
     setActiveFilters(prev => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -103,15 +102,15 @@ export default function GeneSynthesisProgressPage() {
     });
   };
 
-  const selectOnly = (id: FilterCategory) => {
+  const selectOnly = (id: StageCategory) => {
     setActiveFilters(new Set([id]));
   };
 
   const selectAll = () => {
-    setActiveFilters(new Set(FILTER_DEFS.map(f => f.id)));
+    setActiveFilters(new Set(STAGE_DEFS.map(f => f.id)));
   };
 
-  // --- Sorting + column visibility (Phase 7) ---
+  // --- Sorting + column visibility -------------------------------------
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [visibleCols, setVisibleCols] = useState<Set<string>>(() => new Set(VISIBLE_COLUMNS.map(c => c.key)));
@@ -129,17 +128,20 @@ export default function GeneSynthesisProgressPage() {
 
   const shownColumns = VISIBLE_COLUMNS.filter(c => visibleCols.has(c.key));
 
+  // --- Free-text search (any visible column) ---------------------------
+  const [query, setQuery] = useState('');
+
   // Compute counts per category and filtered rows
   const { filteredData, categoryCounts } = useMemo(() => {
-    if (!data) return { filteredData: [], categoryCounts: {} as Record<FilterCategory, number> };
+    if (!data) return { filteredData: [], categoryCounts: {} as Record<StageCategory, number> };
 
-    const counts: Record<FilterCategory, number> = {
+    const counts: Record<StageCategory, number> = {
       in_progress: 0, shipped: 0, canceled: 0, moved: 0, other: 0,
     };
 
-    const filtered: GeneTrackerRow[] = [];
+    const filtered: JobLogRow[] = [];
     for (const row of data) {
-      const cat = classifyProgress(row.synthesis_progress);
+      const cat = classifyStage(String(row.stage ?? ''));
       counts[cat]++;
       if (activeFilters.has(cat)) {
         filtered.push(row);
@@ -149,10 +151,19 @@ export default function GeneSynthesisProgressPage() {
     return { filteredData: filtered, categoryCounts: counts };
   }, [data, activeFilters]);
 
-  // Gene Tracker rows are historical strings; numeric columns sort numerically
+  // Text search across the displayed columns
+  const searchedData = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return filteredData;
+    return filteredData.filter((row) =>
+      shownColumns.some((col) => String(row[col.key] ?? '').toLowerCase().includes(q))
+    );
+  }, [filteredData, query, shownColumns]);
+
+  // Job Log rows are historical strings; numeric columns sort numerically
   // when every non-empty value parses, string/empty-cell collation otherwise.
   const shownData = useMemo(() => {
-    let rows = filteredData;
+    let rows = searchedData;
     if (sortKey) {
       const vals = rows.map(r => String(r[sortKey] ?? '').trim());
       const numeric = vals.every(v => v === '' || !isNaN(Number(v.replace(/,/g, ''))));
@@ -169,7 +180,7 @@ export default function GeneSynthesisProgressPage() {
       rows = sorted;
     }
     return rows;
-  }, [filteredData, sortKey, sortDir]);
+  }, [searchedData, sortKey, sortDir]);
 
   if (!data || data.length === 0) {
     return (
@@ -177,8 +188,8 @@ export default function GeneSynthesisProgressPage() {
         <Card className="w-full max-w-md">
           <CardHeader>
             <div className="flex justify-center mb-4"><FileText className="w-12 h-12 text-primary" /></div>
-            <CardTitle>Gene Tracker</CardTitle>
-            <CardDescription>No Gene Tracker data found. Data is loading or not yet imported.</CardDescription>
+            <CardTitle>Job Log</CardTitle>
+            <CardDescription>No Job Log data found. Data is loading or not yet imported.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -190,7 +201,7 @@ export default function GeneSynthesisProgressPage() {
       {/* Filter toolbar */}
       <Card className="p-3">
         <div className="flex flex-wrap gap-2 items-center">
-          {FILTER_DEFS.map(f => {
+          {STAGE_DEFS.map(f => {
             const isActive = activeFilters.has(f.id);
             const count = categoryCounts[f.id] || 0;
             return (
@@ -219,6 +230,23 @@ export default function GeneSynthesisProgressPage() {
           <Button variant="ghost" size="sm" onClick={() => setActiveFilters(new Set(['in_progress', 'other']))}>
             Reset
           </Button>
+          <div className="relative">
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filter rows..."
+              className="h-8 w-48 pr-7 text-sm"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Clear filter"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-1">
@@ -242,8 +270,15 @@ export default function GeneSynthesisProgressPage() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          <ExportLogButton
+            table={{
+              sql: 'SELECT work_no, bbi_id, order_date, so, gene_name, vector, cloning_site, resistance, length_bp, quantity, prep, stage, insert_sequence, final_vector_sequence, plasmid_no, tube_id, host, temperature, competent_cells, notes FROM job_log ORDER BY work_no',
+              sheet: 'Job Log',
+              file: 'Job_Log',
+            }}
+          />
           <span className="text-xs text-muted-foreground ml-auto">
-            {filteredData.length} of {data.length} entries
+            {shownData.length} of {data.length} entries
           </span>
         </div>
       </Card>
@@ -280,18 +315,18 @@ export default function GeneSynthesisProgressPage() {
                   </TableRow>
                 ) : (
                   shownData.map((row, i) => {
-                    const category = classifyProgress(row.synthesis_progress);
+                    const category = classifyStage(String(row.stage ?? ''));
                     return (
                       <TableRow key={row.work_no || i} className="hover:bg-secondary">
                         <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
                         {shownColumns.map(col => (
                           <TableCell key={col.key} className="whitespace-nowrap max-w-[300px] truncate">
-                            {col.key === 'synthesis_progress' ? (
-                              <Badge className={cn('font-normal', progressBadgeClass(category))}>
+                            {col.key === 'stage' ? (
+                              <Badge className={cn('font-normal', stageBadgeClass(category))}>
                                 {row[col.key] || ''}
                               </Badge>
                             ) : (
-                              row[col.key] || ''
+                              row[col.key] ?? ''
                             )}
                           </TableCell>
                         ))}

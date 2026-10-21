@@ -7,7 +7,7 @@ export type DashboardData = {
     success: boolean;
     message?: string;
     stages?: StageCount[];
-    gene_tracker_total?: number;
+    job_log_total?: number;
     master_summary_rows?: number;
     vector_db_rows?: number;
     primers_rows?: number;
@@ -35,14 +35,14 @@ export async function fetchDashboardCounts(): Promise<DashboardData> {
                 rows: dat.success ? Number(dat.rows?.[0]?.n ?? 0) : 0,
             });
         }
-        const gt = (await runBridge({ action: 'db_run_query', sql: 'SELECT count(*) AS n FROM gene_tracker_data' }) as any) as { success: boolean; rows?: any[] };
+        const gt = (await runBridge({ action: 'db_run_query', sql: 'SELECT count(*) AS n FROM job_log' }) as any) as { success: boolean; rows?: any[] };
         const ms = (await runBridge({ action: 'db_run_query', sql: 'SELECT count(*) AS n FROM master_summary' }) as any) as { success: boolean; rows?: any[] };
         const vd = (await runBridge({ action: 'db_run_query', sql: 'SELECT count(*) AS n FROM vector_db' }) as any) as { success: boolean; rows?: any[] };
         const pr = (await runBridge({ action: 'db_run_query', sql: 'SELECT count(*) AS n FROM primers' }) as any) as { success: boolean; rows?: any[] };
         return {
             success: true,
             stages: out,
-            gene_tracker_total: gt.success ? Number(gt.rows?.[0]?.n ?? 0) : 0,
+            job_log_total: gt.success ? Number(gt.rows?.[0]?.n ?? 0) : 0,
             master_summary_rows: ms.success ? Number(ms.rows?.[0]?.n ?? 0) : 0,
             vector_db_rows: vd.success ? Number(vd.rows?.[0]?.n ?? 0) : 0,
             primers_rows: pr.success ? Number(pr.rows?.[0]?.n ?? 0) : 0,

@@ -2,24 +2,24 @@
 
 import { runBridge } from "./python-bridge";
 
-/** Eligible jobs for layout building: not shipped/canceled/moved; ordered by order_date. */
+/** Eligible jobs for layout building: not shipped/canceled/moved; ordered by work_no. */
 export async function fetchEligibleJobs(): Promise<{
     eligible: { work_no: string; bbi_id: string; gene_name: string; vector: string; cloning_site: string; resistance: string; length_bp: string; prep: string }[];
-    ineligible: { work_no: string; synthesis_progress: string }[];
+    ineligible: { work_no: string; stage: string }[];
 }> {
     const res = (await runBridge({
         action: "db_run_query",
-        sql: "SELECT work_no, bbi_id, gene_name, vector, cloning_site, resistance, length_bp, prep FROM gene_tracker_data ORDER BY work_no",
+        sql: "SELECT work_no, bbi_id, gene_name, vector, cloning_site, resistance, length_bp, prep, stage FROM job_log ORDER BY work_no",
     }) as any) as { success: boolean; rows?: any[]; [k: string]: any };
     if (!res.success) return { eligible: [], ineligible: [] };
     const rows = res.rows || [];
     const eligible: any[] = [];
     const ineligible: any[] = [];
     for (const r of rows) {
-        const prog = String(r.synthesis_progress ?? "");
+        const stage = String(r.stage ?? "");
         const blocked =
-            /^0\./.test(prog) || /^(cancel|canceled|cancelled|moved|shipped)/i.test(prog);
-        if (blocked) ineligible.push({ work_no: r.work_no, synthesis_progress: prog });
+            /^0\./.test(stage) || /^(cancel|canceled|cancelled|moved|shipped)/i.test(stage);
+        if (blocked) ineligible.push({ work_no: r.work_no, stage });
         else
             eligible.push({
                 work_no: r.work_no,
@@ -28,7 +28,7 @@ export async function fetchEligibleJobs(): Promise<{
                 vector: r.vector ?? "",
                 cloning_site: r.cloning_site ?? "",
                 resistance: r.resistance ?? "",
-                length_bp: r.length_bp ?? "",
+                length_bp: r.length_bp == null ? "" : String(r.length_bp),
                 prep: r.prep ?? "",
             });
     }

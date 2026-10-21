@@ -13,7 +13,7 @@ export type SampleLookupResult = {
     success: boolean;
     query?: string;
     message?: string;
-    gene_tracker?: Record<string, any> | null;
+    job_log?: Record<string, any> | null;
     timeline?: TimelineStep[];
 };
 
@@ -38,13 +38,13 @@ export async function sampleLookup(rawQuery: string): Promise<SampleLookupResult
         { log_type: "seq_log", label: "Seq Results", idTable: "seq_log_index", dataTable: "seq_log_index", idCol: "id", matchCol: "name" },
     ];
 
-    // Gene Tracker row (work_no or bbi_id)
-    let geneTracker: Record<string, any> | null = null;
+    // Job Log row (work_no or bbi_id)
+    let jobLogRow: Record<string, any> | null = null;
     const gtRes = (await runBridge({
         action: "db_run_query",
-        sql: `SELECT * FROM gene_tracker_data WHERE work_no ILIKE '%${q}%' OR bbi_id ILIKE '%${q}%' LIMIT 5`,
+        sql: `SELECT * FROM job_log WHERE work_no ILIKE '%${q}%' OR bbi_id ILIKE '%${q}%' LIMIT 5`,
     }) as any) as { success: boolean; rows?: any[] };
-    if (gtRes.success && gtRes.rows && gtRes.rows.length > 0) geneTracker = gtRes.rows[0];
+    if (gtRes.success && gtRes.rows && gtRes.rows.length > 0) jobLogRow = gtRes.rows[0];
 
     const timeline: TimelineStep[] = [];
     for (const step of steps) {
@@ -75,11 +75,11 @@ export async function sampleLookup(rawQuery: string): Promise<SampleLookupResult
         timeline.push({ log_type: step.label.toLowerCase().replace(/ /g, "_"), label: step.label, present: entries.length > 0, entries });
     }
 
-    const anyHit = !!geneTracker || timeline.some((t) => t.present);
+    const anyHit = !!jobLogRow || timeline.some((t) => t.present);
     return {
         success: anyHit,
         query,
-        gene_tracker: geneTracker,
+        job_log: jobLogRow,
         timeline,
         message: anyHit ? undefined : `No entries matched "${query}" in any log table.`,
     };

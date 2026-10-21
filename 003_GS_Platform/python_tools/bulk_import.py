@@ -6,8 +6,8 @@ Functions (exposed as bridge.py actions):
   the filename, skip entries already present in the log type's index table,
   and persist via the same insert shape as bridge.action_parse_and_persist.
   dry_run=True parses and validates but inserts nothing.
-- import_gene_tracker(args): header-verified, work_no-based UPSERT of a Gene
-  Tracker / In-house Progress "Initiated" sheet into gene_tracker_data.
+- import_job_log(args): header-verified, work_no-based UPSERT of a Job Log
+  sheet into the job_log table.
 - import_master_summary(args): stream the Extraction Log 'summary' sheet into
   a NEW master_summary table (drop + recreate, batched inserts).
 
@@ -323,10 +323,10 @@ def bulk_import(args: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Gene Tracker upsert import
+# Job Log upsert import
 # ---------------------------------------------------------------------------
 
-# Same A-AE map as python_tools/import_gene_tracker.py (column 1-based)
+# Same A-T map as python_tools/import_job_log.py (column 1-based)
 GT_COLUMN_MAP = {
     1: 'work_no',
     2: 'bbi_id',
@@ -337,28 +337,17 @@ GT_COLUMN_MAP = {
     7: 'cloning_site',
     8: 'resistance',
     9: 'length_bp',
-    10: 'plasmid_qty',
+    10: 'quantity',
     11: 'prep',
-    12: 'synthesis_progress',
-    13: 'job_id_2',
-    14: 'internal_progress_notes',
-    15: 'need_by',
-    16: 'qc_status',
-    17: 'insert_sequence',
-    18: 'seq_check',
-    19: 'insert_vector',
-    20: 'plasmid_no',
-    21: 'tube_id',
-    22: 'position_in_box',
-    23: 'host',
-    24: 'growth_condition_temperature',
-    25: 'competent_cells',
-    26: 'od260',
-    27: 'od280',
-    28: 'od260_od280',
-    29: 'conc_ng_ul',
-    30: 'shipped',
-    31: 'notes_on_order_shipment',
+    12: 'stage',
+    13: 'insert_sequence',
+    14: 'final_vector_sequence',
+    15: 'plasmid_no',
+    16: 'tube_id',
+    17: 'host',
+    18: 'temperature',
+    19: 'competent_cells',
+    20: 'notes',
 }
 
 
@@ -366,7 +355,7 @@ def _gt_schema_columns() -> list:
     with open(db_ops.SCHEMA_PATH, 'r') as f:
         import yaml
         schema = yaml.safe_load(f)
-    return [c['name'] for c in schema['gene_tracker']['data']]
+    return [c['name'] for c in schema['job_log']['data']]
 
 
 def _gt_read_rows(xlsx_path: str, sheet: str):
@@ -383,7 +372,7 @@ def _gt_read_rows(xlsx_path: str, sheet: str):
         headers = [("" if v is None else str(v)) for v in header_row]
 
         # Build expected headers by reading the schema names back as the
-        # canonical map, and comparing against what import_gene_tracker.py
+        # canonical map, and comparing against what import_job_log.py
         # historically produced. We verify MAPPING INTEGRITY (every schema
         # column has a mapped source column) and HEADER-PRESENCE drift.
         missing_map = []
@@ -393,7 +382,7 @@ def _gt_read_rows(xlsx_path: str, sheet: str):
 
         data_rows = []
         for row in ws.iter_rows(min_row=2, values_only=True):
-            if row is None or all(v is None or (isinstance(v, str) and not v.strip()) for v in row[:31]):
+            if row is None or all(v is None or (isinstance(v, str) and not v.strip()) for v in row[:20]):
                 continue
             row_data = {}
             has_data = False
@@ -418,7 +407,7 @@ def _gt_read_rows(xlsx_path: str, sheet: str):
         wb.close()
 
 
-def import_gene_tracker(args: dict) -> dict:
+def import_job_log(args: dict) -> dict:
     """Bridge action: header-verified upsert of an 'Initiated' sheet by work_no."""
     xlsx_path = args.get('xlsx_path', '')
     sheet = args.get('sheet', 'Initiated')
@@ -442,16 +431,12 @@ def import_gene_tracker(args: dict) -> dict:
     rows = result["rows"]
 
     # --- Header drift verification -----------------------------------------
-    # Expected readable headers (A-AE) per the historical importer map:
+    # Expected readable headers (A-T) per the Job Log importer map:
     EXPECTED_HEADERS = [
         'Work No.', 'BBI ID', 'Order Date', 'SO', 'Gene Name', 'Vector',
-        'Cloning Site', 'Resistance', 'Length (bp)', 'Plasmid Qty.', 'Prep',
-        'Synthesis Progress', 'Work No. 2', 'Internal PROGRESS NOTES',
-        'NEED BY:', 'QC Status', 'Insert Sequence', ' ', 'Insert+Vector',
-        'Plasmid No.', 'Tube ID', 'Position in Box', 'Host',
-        'Growth Condition/\nTemperature\n', 'Competent Cells',
-        'OD260 (BATCH ONLY)', 'OD280 (BATCH ONLY)', 'OD260/OD280 (BATCH ONLY)',
-        'Conc. ng/uL (BATCH ONLY)', 'Shipped', 'Notes on ORDER/SHIPMENT',
+        'Cloning Site', 'Resistance', 'Length (bp)', 'Quantity', 'Prep',
+        'Stage', 'Insert Sequence', 'Final Vector Sequence', 'Plasmid No.',
+        'Tube ID', 'Host', 'Temperature', 'Competent Cells', 'Notes',
     ]
     drift = []
     for col_num, col_name in GT_COLUMN_MAP.items():
@@ -469,14 +454,14 @@ def import_gene_tracker(args: dict) -> dict:
             "message": "Header drift detected — import aborted. Diff list follows.",
             "drift": drift,
             "unmapped_schema_cols": unmapped_schema_cols,
-            "headers_found": headers[:31],
+            "headers_found": headers[:20],
         }
 
     inserted = updated = skipped = 0
     conn = db_ops.get_connection()
     try:
         existing = {
-            str(r[0]) for r in conn.execute("SELECT work_no FROM gene_tracker_data").fetchall()
+            str(r[0]) for r in conn.execute("SELECT work_no FROM job_log").fetchall()
             if r[0] is not None
         }
     finally:
@@ -520,12 +505,12 @@ def import_gene_tracker(args: dict) -> dict:
         conn.execute("BEGIN TRANSACTION")
         for row_data in upsert_rows:
             conn.execute(
-                "DELETE FROM gene_tracker_data WHERE work_no = ?", [row_data['work_no']]
+                "DELETE FROM job_log WHERE work_no = ?", [row_data['work_no']]
             )
         df = pd.DataFrame(upsert_rows)
         quoted_cols = ', '.join(f'"{c}"' for c in schema_cols)
         df = df[schema_cols]
-        conn.execute(f"INSERT INTO gene_tracker_data ({quoted_cols}) SELECT * FROM df")
+        conn.execute(f"INSERT INTO job_log ({quoted_cols}) SELECT * FROM df")
         conn.execute("COMMIT")
     except Exception as e:
         conn.execute("ROLLBACK")

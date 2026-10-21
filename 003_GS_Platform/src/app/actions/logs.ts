@@ -119,9 +119,9 @@ export async function fetchPersistedData(logType: LogType): Promise<FetchResult>
     }
 }
 
-export async function fetchGeneTracker(): Promise<{ success: boolean; data?: any[]; message?: string }> {
+export async function fetchJobLog(): Promise<{ success: boolean; data?: any[]; message?: string }> {
     try {
-        const result = await runBridge({ action: 'fetch_gene_tracker' }) as any;
+        const result = await runBridge({ action: 'fetch_job_log' }) as any;
         if (!result.success) {
             return { success: false, message: result.message || 'Fetch failed.' };
         }
