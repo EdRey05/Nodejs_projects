@@ -1,0 +1,14 @@
+title: Local Windows tools
+description: Personal projects by Eduardo Reyes
+theme: jekyll-theme-cayman
+show_downloads: false
+url: https://edrey05.github.io
+baseurl: /Nodejs_projects
+exclude:
+  - 001_S_I
+  - 002_MD_Studio
+  - 003_GS_Platform
+  - build-tools
+  - demo-tools
+  - PAGES.md
+  - THIRD_PARTY_NOTICES.md

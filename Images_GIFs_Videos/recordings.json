@@ -1,0 +1,58 @@
+[
+  {
+    "posterSha256": "D374D714550B0DC484B8DD191A66A37863F3DA154C46CE297DA775A682BB39B1",
+    "artifactSha256": "AC258050CFBE86C520FBF0EDBBC4C551BE0073FB4960B9EE04460A0215765D89",
+    "capture": "Real Edge renderer, measured frame timing; no audio; CDP UI automation",
+    "gifSpeed": "2x",
+    "app": "001_S_I",
+    "videoSha256": "C62805AF03B0F44E381C9DA309DDA196E36D68FA94A5F4A8E4AC00E41415965E",
+    "gifSha256": "23A2DD4A9B7BE3162E85386E7873531267219A1720694A97CCAE0B81265F49AC",
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1280,
+          "height": 800,
+          "nb_frames": "411",
+          "side_data_list": [
+            {}
+          ]
+        }
+      ],
+      "format": {
+        "duration": "34.250000",
+        "size": "343453"
+      }
+    }
+  },
+  {
+    "metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1280,
+          "height": 800,
+          "nb_frames": "219",
+          "side_data_list": [
+            {}
+          ]
+        }
+      ],
+      "format": {
+        "duration": "18.250000",
+        "size": "93081"
+      }
+    },
+    "videoSha256": "054AB7658891FB2D1B64E3EC5D826EA54994B92718CFAF432B250C052DD9C696",
+    "artifactSha256": "47E34462C6D94AE5ACB2F968BF6FD77148FEF0981CFBF51381D2FD0F5BADAFBB",
+    "gifSpeed": "2x",
+    "app": "002_MD_Studio",
+    "gifSha256": "1EE742DD13D8AFA173386D9ED792A3DA000FA23D9E449134737328FD87819CE5",
+    "posterSha256": "9B66F5EAC581407817D9A737C501ECB83E5A470CAB4CA03B448DAAD2C2120AF8",
+    "capture": "Real Edge renderer, measured frame timing; no audio; CDP UI automation"
+  }
+]
