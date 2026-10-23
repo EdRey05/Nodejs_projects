@@ -1,24 +1,11 @@
-# Firebase Studio
+# Personal Savings & Investing Tracker
 
-This is a NextJS starter in Firebase Studio.
+Offline personal finance workbook viewer/editor. This older app is retained as a runnable example, with generated AI/cloud scaffolding removed. It is not connected to any financial institution.
 
-To get started, take a look at src/app/page.tsx.
+Extract the portable ZIP and double-click Start.cmd. Open **Manage & Import**, import the synthetic workbook under examples/ in the portable folder (demo-data/001 in the repository), choose an account, and inspect savings/investment transactions and charts. Use **Export** in account management to save your changes. Refreshing/closing loses unsaved in-memory changes. Stop.cmd stops the background service.
 
-# Personal Finance Dashboard
+Workbook sheets: Accounts (required), S_Transactions, I_M_Transactions and I_SD_Transactions. Accounts use id, name, bank, type (savings/investment), optional interestRate and subtype (managed/self-directed). Transactions use id, accountId, type, amount and ISO date, with optional assetName/assetCode/assetCategory/shares for holdings. Use the supplied synthetic workbook as the format reference. Keep account IDs unique and transaction accountId values linked to them.
 
-This is a personal web app built with Node.js and Firebase Studio for managing savings and investment logs using Excel files.
+Charts and projections reflect the app's simplified calculations, not brokerage valuation or financial advice. Workbook import/export is the persistence contract. No AI, cloud account or API key is required. System fonts work offline.
 
-## Features
-- Upload an Excel file with a predefined format
-- Visualize savings and investment trends
-- Add/edit entries directly in the dashboard
-- Download the updated Excel file
-
-## No Backend / Cloud Usage
-This app does not use any Firebase hosting or database features. It runs locally and does not store any data online.
-
-## For Personal Use
-This was built for my own financial tracking workflow. The Excel format is customized and not standardized.
-
-## License
-[MIT](./LICENSE)
+Source development: npm ci, npm run typecheck, npm run build, npm start. Portable builds: [shared instructions](../build-tools/README.md). [MIT license](../LICENSE).

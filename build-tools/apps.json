@@ -1,0 +1,11 @@
+{
+  "nodeVersion": "22.22.0",
+  "apps": [
+    {
+      "id": "001_S_I",
+      "entry": "server.js",
+      "route": "/",
+      "kind": "next"
+    }
+  ]
+}

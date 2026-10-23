@@ -112,6 +112,18 @@ export function AccountManager({ children }: { children: React.ReactNode }) {
                 date: txn.date instanceof Date ? txn.date.toISOString() : txn.date,
             }));
 
+            const ids = new Set(importedAccounts.map(account => account.id));
+            if (ids.size !== importedAccounts.length || importedAccounts.some(account =>
+                typeof account.id !== 'string' || !account.id || !account.name || !account.bank ||
+                !['savings', 'investment'].includes(account.type) ||
+                (account.type === 'investment' && !['managed', 'self-directed'].includes(account.subtype || '')))) {
+                throw new Error('Accounts must have unique IDs, names, banks and valid types/subtypes.');
+            }
+            if (finalTransactions.some(txn => !ids.has(txn.accountId) || typeof txn.id !== 'string' ||
+                !Number.isFinite(txn.amount) || txn.amount < 0 || !Number.isFinite(Date.parse(txn.date)) ||
+                !['contribution','withdrawal','interest','buy','sell','dividend','stock-lending','distribution'].includes(txn.type))) {
+                throw new Error('Transactions must reference an account and contain a valid ID, amount, date and type.');
+            }
             loadData({ accounts: importedAccounts, transactions: finalTransactions });
 
         } catch (error) {
