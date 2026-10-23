@@ -6,6 +6,12 @@
       "entry": "server.js",
       "route": "/",
       "kind": "next"
+    },
+    {
+      "id": "002_MD_Studio",
+      "entry": "server.js",
+      "route": "/",
+      "kind": "express"
     }
   ]
 }

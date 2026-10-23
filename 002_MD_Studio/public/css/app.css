@@ -648,3 +648,8 @@ body {
 .sidebar-rescue.visible { display: flex; }
 
 .view-toggle-btn.hidden { display: none !important; }
+
+/* Source left, preview right, matching the editing workflow. */
+.split-editor { order: 0; }
+.split-divider { order: 1; }
+.split-preview { order: 2; }

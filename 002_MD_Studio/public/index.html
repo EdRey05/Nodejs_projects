@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MD Studio</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/app.css">
   <style>
     .tree-entry[data-depth="0"] { --tree-color: #94a3b8; }
@@ -68,7 +66,7 @@
       </div>
 
       <div class="mount-note">
-        You can also use a PowerShell picker script to launch the app.
+        Paste your Markdown folder path above. Split shows source and live preview.
         <br>Save a path above and MD Studio will remember it for next time.
       </div>
     </div>
@@ -140,7 +138,7 @@
   <script>
     let currentFile = null;
     let currentContent = '';
-    let currentTab = 'preview';
+    let currentTab = 'split';
     let isDirty = false;
     let expandedFolders = new Set(['']);
     let sidebarCollapsed = false;
@@ -170,7 +168,7 @@
       document.getElementById('mount-screen').style.display = 'none';
       document.getElementById('editor-screen').style.display = '';
       document.getElementById('workspace-display').textContent = workspacePath;
-      switchTab('preview');
+      switchTab('split');
       loadTree();
     }
 
@@ -240,13 +238,14 @@
           const indent = 16 + depth * 12;
           const dirDiv = document.createElement('div');
           dirDiv.innerHTML = `
-            <div class="tree-entry" data-path="${entryPath}" data-depth="${depth}" onclick="toggleFolder('${entryPath}')" style="padding-left:${indent}px;">
+            <div class="tree-entry" data-path="${escapeHtml(entryPath)}" data-depth="${depth}"  style="padding-left:${indent}px;">
               <span class="tree-arrow">${isExpanded ? '▼' : '▶'}</span>
               <span class="tree-icon">📁</span>
-              <span class="tree-name">${entry.name}</span>
+              <span class="tree-name">${escapeHtml(entry.name)}</span>
             </div>
-            <div class="tree-children ${isExpanded ? 'open' : ''}" id="children-${entryPath.replace(/\\/g, '-')}"></div>
+            <div class="tree-children ${isExpanded ? 'open' : ''}" id="children-${escapeHtml(entryPath.replace(/\\/g, '-'))}"></div>
           `;
+          dirDiv.querySelector('.tree-entry').onclick = () => toggleFolder(entryPath);
           container.appendChild(dirDiv);
           if (isExpanded) loadChildren(entryPath, depth + 1);
         } else if (entry.name.endsWith('.md')) {
@@ -254,12 +253,13 @@
           const indent = 16 + depth * 12;
           const fileDiv = document.createElement('div');
           fileDiv.innerHTML = `
-            <div class="tree-entry${isActive ? ' active' : ''}" data-path="${entryPath}" data-depth="${depth}" onclick="openFile('${entryPath}')" style="padding-left:${indent}px;">
+            <div class="tree-entry${isActive ? ' active' : ''}" data-path="${escapeHtml(entryPath)}" data-depth="${depth}"  style="padding-left:${indent}px;">
               <span class="tree-arrow"></span>
               <span class="tree-icon">📄</span>
-              <span class="tree-name">${entry.name}</span>
+              <span class="tree-name">${escapeHtml(entry.name)}</span>
             </div>
           `;
+          fileDiv.querySelector('.tree-entry').onclick = () => openFile(entryPath);
           container.appendChild(fileDiv);
         }
       }
@@ -335,6 +335,8 @@
     // ─── Tab Switching ──────────────────────────────────────────────
 
     function switchTab(tab) {
+      const editor = document.querySelector(".editor-body textarea");
+      if (editor) currentContent = editor.value;
       currentTab = tab;
       document.querySelectorAll('.editor-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
       const syncBtn = document.getElementById('split-sync-btn');
@@ -472,7 +474,7 @@
     }
 
     function escapeHtml(str) {
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     // ─── Save ───────────────────────────────────────────────────────
@@ -535,6 +537,8 @@
     document.getElementById('mount-path').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') doMount();
     });
+
+    window.addEventListener('beforeunload', e => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
 
     // ─── Init ───────────────────────────────────────────────────────
     init();

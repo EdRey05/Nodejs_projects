@@ -1,4 +1,4 @@
-param([string]$DemoApp,[string]$Folder)
+﻿param([string]$DemoApp,[string]$Folder)
 switch($DemoApp){
  '001_S_I'{
   Step 'Import a fictional finance workbook' (Click 'Manage & Import') 3
@@ -31,5 +31,20 @@ switch($DemoApp){
   # Close the sheet using its actual close button.
   Eval '(()=>{const b=[...document.querySelectorAll("button")].find(e=>e.innerText.trim()==="Close");if(b)b.click();return true})()' | Out-Null
   Step 'Local charts and transaction history; export before closing' '' 4
+ }
+ '002_MD_Studio'{
+  New-Item -ItemType Directory C:\SyntheticMarkdown -Force | Out-Null
+  Copy-Item C:\Fixtures\002\Notebook.md C:\SyntheticMarkdown\Notebook.md
+  Step 'Mount a disposable folder of Markdown notes' (Fill '#mount-path' 'C:\SyntheticMarkdown') 2
+  Step 'Open the workspace' (Click 'Mount Workspace') 2
+  Step 'Open source and live preview side by side' 'openFile("Notebook.md");true' 3
+  $content="# Synthetic project notebook`n`n## Updated in MD Studio`n`n- [x] Edit source`n- [x] Inspect live preview`n- [x] Save a real Markdown file`n`n**Everything here is fictional.**"
+  Step 'Edit the source; the preview updates automatically' (Fill '.split-editor textarea' $content) 4
+  if((Eval 'document.getElementById("split-preview-content").innerText') -notmatch 'Updated in MD Studio'){throw 'Live preview did not update'}
+  Step 'Save changes to the original Markdown file' (Click 'Save') 3
+  if((Get-Content C:\SyntheticMarkdown\Notebook.md -Raw) -ne $content){throw 'Saved Markdown differs from editor'}
+  Copy-Item C:\SyntheticMarkdown\Notebook.md C:\TestExport\Notebook-edited.md
+  Step 'Reopen and verify the saved result' 'openFile("Notebook.md");true' 3
+  if((Eval 'document.querySelector(".split-editor textarea").value') -ne $content){throw 'Reopened content differs'}
  }
 }

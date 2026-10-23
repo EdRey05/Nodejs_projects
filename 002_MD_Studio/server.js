@@ -5,7 +5,9 @@ const { marked: markedModule } = require('marked');
 const marked = markedModule.parse ? markedModule : markedModule.marked;
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT || 3000);
+if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) throw Error('Invalid PORT');
+const sanitizeHtml = require('sanitize-html');
 
 // When packaged as .exe (via pkg), writes inside __dirname are read-only.
 // Save config.json next to the executable instead.
@@ -42,7 +44,13 @@ if (WORKSPACE) {
   WORKSPACE = path.resolve(WORKSPACE);
 }
 
-app.use(express.json());
+app.use((req, res, next) => {
+  const host = req.headers.host;
+  if (!host || !/^127\.0\.0\.1:\d+$/.test(host)) return res.status(403).json({error:'Invalid host'});
+  if (req.headers.origin && req.headers.origin !== `http://${host}`) return res.status(403).json({error:'Cross-origin request denied'});
+  res.setHeader('X-Content-Type-Options','nosniff'); next();
+});
+app.use(express.json({limit:'5mb'}));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Workspace API ──────────────────────────────────────────────────
@@ -93,16 +101,15 @@ function ensureWorkspace() {
 
 function checkPath(relPath) {
   ensureWorkspace();
-  const absPath = path.join(WORKSPACE, relPath);
-  const resolved = path.resolve(absPath);
-  const workspaceResolved = path.resolve(WORKSPACE);
-  // Cross-platform safe: normalize both to forward slashes for the prefix check
-  if (!resolved.toLowerCase().startsWith(workspaceResolved.toLowerCase())) {
-    const err = new Error('Path outside workspace');
-    err.status = 403;
-    throw err;
-  }
-  return absPath;
+  if (typeof relPath !== 'string' || path.isAbsolute(relPath)) { const err = new Error('Invalid relative path'); err.status = 403; throw err; }
+  const base = fs.realpathSync(WORKSPACE), target = path.resolve(base, relPath);
+  const inside = p => { const relative = path.relative(base,p); return relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative)); };
+  if (!inside(target)) { const err=new Error('Path outside workspace');err.status=403;throw err; }
+  let candidate=target;
+  const exists = p => { try { fs.lstatSync(p); return true; } catch (err) { if (err.code === 'ENOENT') return false; throw err; } };
+  while (!exists(candidate)) { const parent=path.dirname(candidate); if(parent===candidate)throw Error('Invalid path');candidate=parent; }
+  if (!inside(fs.realpathSync(candidate))) {const err=new Error('Link outside workspace');err.status=403;throw err;}
+  return target;
 }
 
 const EXCLUDED_NAMES = new Set([
@@ -166,7 +173,7 @@ app.delete('/api/files/delete', (req, res) => {
 // Render markdown to HTML
 app.post('/api/markdown/render', (req, res) => {
   try {
-    const html = marked.parse(req.body.markdown || '');
+    const html = sanitizeHtml(marked.parse(req.body.markdown || ''), {allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img','input']), allowedAttributes: {...sanitizeHtml.defaults.allowedAttributes, img:['src','alt','title'], input:['type','checked','disabled']}, transformTags:{input:(_tag, attrs)=>({tagName:'input',attribs:{type:'checkbox',disabled:'disabled',...(Object.hasOwn(attrs,'checked')?{checked:'checked'}:{})}})}, allowedSchemes:['http','https','mailto']});
     res.json({ html });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -185,7 +192,7 @@ function startServer(port, maxRetries = 5) {
     console.error('Could not find an available port');
     process.exit(1);
   }
-  const server = app.listen(port, () => {
+  const server = app.listen(port, '127.0.0.1', () => {
     console.log(`📝 MD Studio running at http://localhost:${port}`);
     if (WORKSPACE) {
       console.log(`   Workspace: ${WORKSPACE}`);
@@ -203,4 +210,5 @@ function startServer(port, maxRetries = 5) {
   });
 }
 
-startServer(PORT);
+if (require.main === module) startServer(PORT);
+module.exports = {app, checkPath};
