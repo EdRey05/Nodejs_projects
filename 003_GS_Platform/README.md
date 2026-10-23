@@ -2,7 +2,7 @@
 
 A local lab data application for viewing daily gene-synthesis logs, building Excel layouts, and connecting jobs to their experimental history. The interactive interface uses Next.js/React; Python handles file processing and DuckDB storage.
 
-## Current scope — v0.0.7
+## Current scope — v0.0.8
 
 - **Job Log:** the app's first table and the spine for job relationships — searchable, sortable and filterable master job data.
 - **Job stages:** a canonical thirteen-stage pipeline vocabulary, shared by the Python bridge and the frontend.
@@ -156,7 +156,7 @@ npx next build
 npm start
 ```
 
-The root `npm run build` script uses POSIX environment-variable syntax; use the explicit PowerShell commands above on Windows. `npm start` normally serves on port 3000.
+`npm run build` now works in native Windows shells. `npm start` normally serves on port 3000.
 
 ### Data and another computer
 
@@ -172,10 +172,18 @@ See [`_electron_sidecar/BUILD.md`](_electron_sidecar/BUILD.md) for packaging bac
 
 ## Development status
 
-- Electron release version is `0.0.5`; the root package still has the generic `nextn` / `0.1.0` metadata.
-- Run `npm run typecheck` separately: production build configuration currently ignores TypeScript and ESLint errors.
+- Supported portable-folder version is `0.0.8`; the historical Electron sidecar remains `0.0.5` and is not the supported release recipe.
+- Run `npm run typecheck` separately; production builds now enforce TypeScript checks. No separate ESLint configuration is supplied.
 - The October 5, 2026 baseline check found stale generated `.next` route types and calendar component typing errors. A clean build may refresh route types; the calendar issue needs a source fix.
 - Layout job-eligibility filtering and full relational sample lookup need follow-up verification.
 - Existing planning documents include completed ideas still marked pending; consult the current code before selecting work.
 
 Development proceeds in small workflow-focused increments. Validate generated workbooks and database relationships with representative test data before depending on a changed workflow.
+
+## Standardized portable build (0.0.8)
+
+Use the repository build-tools/Build-Apps.ps1 registry workflow. The portable folder bundles Next standalone output, Node, complete Python, parsers/schema/templates and an initially empty writable app/data folder. Start.cmd opens the local browser; Stop.cmd stops the service. No checkout, host Python/Node, API key or WSL is required. The server invokes GSA_PYTHON set by the launcher. Developer mode can still use PATH Python. Optional import defaults use GSA_IMPORT_ROOT and GSA_PRIMER_LOG; no original-machine folder is required.
+
+The legacy _electron_sidecar is historical, outside the supported portable build path. Its old build instructions do not describe this release. This version standardizes packaging only; incomplete domain workflows and placeholder pages remain. There is no public demo or recording for 003 yet. Keep production files out of portable builds; back up data before replacing versions. No live or legacy user database was used to validate this packaging.
+
+Portable runtime note: DuckDB needs MSVCP140.dll. The build stages an app-local copy from the pinned NumPy wheel beside the bundled Python interpreter, preserving its original file/notices and recording its hash. End users do not install a C++ runtime separately.

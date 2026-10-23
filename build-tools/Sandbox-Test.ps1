@@ -31,14 +31,8 @@ try{
    $state=Wait-State $folder;$record.checks+='relocated-offline-http-200'
    if($id -eq '003_GS_Platform'){
     Push-Location "$folder\app"
-    & "$folder\python\python.exe" -I -c "import duckdb,pandas,openpyxl,yaml,PIL; print('Native runtime imports passed')" | Set-Content C:\TestExport\003-python-imports.txt
-    if($LASTEXITCODE){throw 'Python imports failed'}
-    '{"action":"fetch_stages"}' | & "$folder\python\python.exe" python_tools\bridge.py | Set-Content C:\TestExport\003-stages.json
-    if($LASTEXITCODE){throw 'Packaged Python bridge failed'}
-    $stages=Get-Content C:\TestExport\003-stages.json -Raw | ConvertFrom-Json
-    if(!$stages.success){throw 'Stage bridge returned failure'}
-    & "$folder\python\python.exe" -c "import sys; sys.path.insert(0,'python_tools'); import db_ops; db_ops.init_db(); c=db_ops.get_connection(); print(c.execute('SHOW TABLES').fetchall()); c.close()" | Set-Content C:\TestExport\003-empty-schema.txt
-    if($LASTEXITCODE){throw 'Fresh packaged schema initialization failed'}
+    & "$folder\runtime\node.exe" C:\TestRunner\Smoke-Python.cjs "$folder\python\python.exe" C:\TestExport
+    if($LASTEXITCODE){throw 'Bundled Python bridge/schema smoke failed; inspect exported stdout/stderr'}
     Pop-Location;$record.checks+='bundled-python-imports','packaged-bridge-stages','empty-schema-initialization'
    }else{
     $browser=Start-Process $edge -ArgumentList @('--headless=new','--disable-gpu','--no-first-run','--remote-debugging-port=9222',"--user-data-dir=C:\Browser-$id",$state.url) -WindowStyle Hidden -PassThru

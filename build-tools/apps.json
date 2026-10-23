@@ -12,6 +12,13 @@
       "entry": "server.js",
       "route": "/",
       "kind": "express"
+    },
+    {
+      "id": "003_GS_Platform",
+      "entry": "server.js",
+      "route": "/home",
+      "kind": "next",
+      "python": true
     }
   ]
 }

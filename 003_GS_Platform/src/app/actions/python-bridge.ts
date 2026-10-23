@@ -17,7 +17,7 @@ export async function runPythonScript(scriptName: string, inputData: any, args: 
       scriptPath = path.join(process.cwd(), 'python_tools', sanitizedScriptName);
     }
 
-    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+    const pythonCmd = process.env.GSA_PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
     const pythonProcess = spawn(pythonCmd, [scriptPath, ...args]);
     let stdout = '';
     let stderr = '';

@@ -22,3 +22,5 @@ The portable folder stores application.log and temporary portable-state.json. MD
 001 is restored as an offline demo at 0.2.0; MD Studio adds portable/security fixes at 1.1.0; Gene Synthesis advances to 0.0.8 for packaging/runtime fixes. 003 remains an incomplete prototype with no showcase demo. No domain redesign or invented workflow completion is included.
 
 Use Test-Apps.ps1 against the matching build output for clean offline validation. Test receipt hashes must match delivered ZIPs. Recordings for 001/002 are produced separately; they demonstrate only the documented synthetic workflows.
+
+The Python recipe also stages an application-local MSVCP140.dll beside python.exe from the exact hash-suffixed runtime already bundled in the pinned NumPy Windows wheel. It preserves the original wheel file and package notices and exports a DLL hash/provenance receipt. DuckDB requires the standard filename; without it, a fresh machine can fail before importing the module. No Visual C++ installer is required on the host or end-user computer. Native imports are checked after staging and again in the fresh offline guest.

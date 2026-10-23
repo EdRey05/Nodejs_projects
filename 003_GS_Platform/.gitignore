@@ -43,3 +43,5 @@ data/obsolete/
 
 # local documentation (stays on this machine; not pushed)
 docs/
+
+.env*

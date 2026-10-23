@@ -40,11 +40,7 @@ from foundations import resolve_initials, default_filename, TEMPLATES_DIR
 
 LIGATION_TEMPLATE = os.path.join(TEMPLATES_DIR, 'Ligation_Template_v5.xlsx')
 COLONY_TEMPLATE = os.path.join(TEMPLATES_DIR, 'ColonyPCR_layout_v3.xlsx')
-PRIMER_LOG_DEFAULT = os.path.join(
-    'C:/Users/Administrator/Desktop/ERA_BioAutomations/Gene_Synthesis_Agent/'
-    'Tasks/Pending/Gene_Synthesis_Platform/2026_pilot/Original_data',
-    'Primer Log v3.xlsx',
-)
+PRIMER_LOG_DEFAULT = os.environ.get('GSA_PRIMER_LOG', os.path.join('data', 'inputs', 'Primer Log v3.xlsx'))
 
 # Ported verbatim from pilot ligation_layout.py
 DEFAULT_HOST = 'TOP10'

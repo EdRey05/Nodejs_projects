@@ -57,6 +57,14 @@ try{
     Move-Item C:\Build\py-stage\python "$folder\python"
     Run "$folder\python\python.exe" @('-m','pip','install','--disable-pip-version-check','-r',"$app\requirements.txt")
     Run "$folder\python\python.exe" @('-m','pip','check')
+    # DuckDB imports MSVCP140.dll by its standard name. NumPy already ships
+    # this redistributable under a hash-suffixed name; preserve that original
+    # and also stage an application-local standard-name copy beside Python.
+    $msvc=@(Get-ChildItem "$folder\python\Lib\site-packages\numpy.libs" -Filter 'msvcp140-*.dll')
+    if($msvc.Count -ne 1){throw 'Cannot identify the pinned NumPy MSVC runtime'}
+    Copy-Item $msvc[0].FullName "$folder\python\msvcp140.dll"
+    @{source=$msvc[0].Name;destination='python/msvcp140.dll';sha256=(Get-FileHash "$folder\python\msvcp140.dll").Hash;provenance='Bundled in the pinned NumPy Windows wheel; original and notices retained'} | ConvertTo-Json | Set-Content "C:\Export\$id-msvc-runtime.json"
+    Run "$folder\python\python.exe" @('-I','-c',"import duckdb,pandas,numpy,openpyxl,yaml,PIL; print('Packaged native imports passed')")
     Run "$folder\python\python.exe" @("$app\python_tools\check_stages.py")
     & "$folder\python\python.exe" -m pip freeze | Set-Content "C:\Export\$id-python-resolved.txt"
     Copy-Item C:\Runner\python-runtime.json C:\Export

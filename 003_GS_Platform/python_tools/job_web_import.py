@@ -28,7 +28,7 @@ import openpyxl
 from db_ops import get_connection, run_query
 from seq_import import _insert_rows_plain
 
-PILOT = r'C:/Users/Administrator/Desktop/ERA_BioAutomations/Gene_Synthesis_Agent/Tasks/Pending/Gene_Synthesis_Platform/2026_pilot'
+PILOT = os.environ.get('GSA_IMPORT_ROOT', os.path.join('data', 'inputs'))
 PRIMER_LOG = PILOT + '/Original_data/Primer Log v3.xlsx'
 IDT_LOG = PILOT + '/Original_data/Summary IDT Log v2.xlsx'
 SHIPMENT_QC = PILOT + '/Original_data/12-Shipment prep and QC/Shipment and QC Log.xlsx'
