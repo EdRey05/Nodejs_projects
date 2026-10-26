@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Local Windows tools
+title: Nodejs projects
 ---
 
 {% include_relative README.md %}

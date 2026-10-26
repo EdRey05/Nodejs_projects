@@ -1,0 +1,16 @@
+---
+---
+@import "jekyll-theme-cayman";
+
+// Ember banner, with a solid-color fallback.
+.page-header {
+  background-color: #6b2737;
+  background-image: linear-gradient(120deg, #6b2737, #a44828);
+}
+
+// Match the Streamlit catalog's compact desktop banner and full-width content.
+@include large {
+  .page-header { padding: 2rem 6rem; }
+}
+
+.main-content { max-width: 100%; margin: auto; }
