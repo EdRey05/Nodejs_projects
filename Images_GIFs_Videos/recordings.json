@@ -28,6 +28,12 @@
     }
   },
   {
+    "app": "002_MD_Studio",
+    "version": "1.2.0",
+    "artifactSha256": "80AE24496BB3D916C7BCA33D23222D78D0F01C143FD580ABF4956DF75FACC33F",
+    "videoSha256": "0BC1865DDE98F4D291550716F73BAD9C3644E9E5403E2229D718CAD94EE0010F",
+    "gifSha256": "E93B196B120AF6BC25B07561954537C05B759C667434F2E8840F054674FAD3A7",
+    "posterSha256": "B2BC495A2B28AFE5AAF7DF8B15CA19FDE4AF4D495EDE0B7FD65501BF6F4815B4",
     "metadata": {
       "programs": [],
       "stream_groups": [],
@@ -35,24 +41,53 @@
         {
           "codec_name": "h264",
           "width": 1280,
-          "height": 800,
-          "nb_frames": "219",
-          "side_data_list": [
-            {}
-          ]
+          "height": 720,
+          "nb_frames": "1156"
         }
       ],
       "format": {
-        "duration": "18.250000",
-        "size": "93081"
+        "duration": "96.333333",
+        "size": "2215887"
       }
     },
-    "videoSha256": "054AB7658891FB2D1B64E3EC5D826EA54994B92718CFAF432B250C052DD9C696",
-    "artifactSha256": "47E34462C6D94AE5ACB2F968BF6FD77148FEF0981CFBF51381D2FD0F5BADAFBB",
+    "capture": "Real offline Windows Sandbox desktop: native folder dialog and Edge; Sky native UI control and CDP editor interaction; no audio",
+    "editing": "Three real capture sessions: launch, native selection, editor; idle waits trimmed; native navigation 6x; editor timing preserved",
+    "segments": [
+      {
+        "source": "launch-session",
+        "end": 2,
+        "speed": 1,
+        "start": 0
+      },
+      {
+        "source": "native-picker-session",
+        "end": 7,
+        "speed": 1,
+        "start": 0
+      },
+      {
+        "source": "native-picker-session",
+        "end": 200,
+        "speed": 6,
+        "start": 145
+      },
+      {
+        "source": "editor-session",
+        "end": 78,
+        "speed": 1,
+        "start": 0
+      }
+    ],
     "gifSpeed": "2x",
-    "app": "002_MD_Studio",
-    "gifSha256": "1EE742DD13D8AFA173386D9ED792A3DA000FA23D9E449134737328FD87819CE5",
-    "posterSha256": "9B66F5EAC581407817D9A737C501ECB83E5A470CAB4CA03B448DAAD2C2120AF8",
-    "capture": "Real Edge renderer, measured frame timing; no audio; CDP UI automation"
+    "gifFps": 4,
+    "verified": [
+      "native-examples-folder-selected",
+      "existing-file-edited-and-saved",
+      "new-file-created-and-saved",
+      "saved-content-matches-sample",
+      "new-file-reopened",
+      "rendered-html-elements-checked",
+      "scroll-stops-without-drift"
+    ]
   }
 ]

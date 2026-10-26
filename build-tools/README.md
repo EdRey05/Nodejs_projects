@@ -19,7 +19,7 @@ The portable folder stores application.log and temporary portable-state.json. MD
 
 ## Versions and validation
 
-001 is restored as an offline demo at 0.2.0; MD Studio adds portable/security fixes at 1.1.0; Gene Synthesis advances to 0.0.8 for packaging/runtime fixes. 003 remains an incomplete prototype with no showcase demo. No domain redesign or invented workflow completion is included.
+001 is restored as an offline demo at 0.2.0; MD Studio adds folder selection and stable Split-view scrolling at 1.2.0, following the portable/security fixes at 1.1.0; Gene Synthesis advances to 0.0.8 for packaging/runtime fixes. 003 remains an incomplete prototype with no showcase demo. No domain redesign or invented workflow completion is included.
 
 Use Test-Apps.ps1 against the matching build output for clean offline validation. Test receipt hashes must match delivered ZIPs. Recordings for 001/002 are produced separately; they demonstrate only the documented synthetic workflows.
 

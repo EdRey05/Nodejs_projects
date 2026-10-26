@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const { execFile } = require('node:child_process');
 const { marked: markedModule } = require('marked');
 const marked = markedModule.parse ? markedModule : markedModule.marked;
 
@@ -42,7 +43,63 @@ if (!WORKSPACE) {
 // Normalize workspace path slashes for cross-platform sanity
 if (WORKSPACE) {
   WORKSPACE = path.resolve(WORKSPACE);
+  try { if (!fs.statSync(WORKSPACE).isDirectory()) WORKSPACE = null; }
+  catch (_) { WORKSPACE = null; }
 }
+
+function selectWorkspace(newPath) {
+  if (typeof newPath !== 'string' || !newPath.trim()) {
+    const err = new Error('Please enter a directory path'); err.status = 400; throw err;
+  }
+  const absPath = path.resolve(newPath.trim());
+  try { if (!fs.statSync(absPath).isDirectory()) throw new Error('Not a directory'); }
+  catch (_) { const err = new Error('Not a valid directory: ' + newPath); err.status = 400; throw err; }
+  const nextConfig = { ...config, workspace: absPath };
+  app.locals.saveConfig(nextConfig);
+  Object.assign(config, nextConfig);
+  WORKSPACE = absPath;
+  return { workspace: WORKSPACE, success: true };
+}
+
+function pickFolder(initialPath) {
+  if (process.platform !== 'win32') return Promise.reject(new Error('Folder browsing requires Windows. Paste a path and save it instead.'));
+  // Fixed script only: paths are data in the environment, never shell source.
+  const script = `
+    $ErrorActionPreference = 'Stop'
+    [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+    Add-Type -AssemblyName System.Windows.Forms
+    $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+    $dialog.Description = 'Choose your Markdown workspace'
+    $dialog.ShowNewFolderButton = $false
+    $dialog.SelectedPath = $env:MD_STUDIO_PICKER_START
+    $owner = New-Object System.Windows.Forms.Form
+    $owner.ShowInTaskbar = $false
+    $owner.StartPosition = 'CenterScreen'
+    $owner.Size = New-Object System.Drawing.Size(1, 1)
+    $owner.Opacity = 0
+    $owner.TopMost = $true
+    try {
+      # A never-shown owner has no visible topmost window for the native dialog
+      # to stay above. Show the transparent owner before opening its modal UI.
+      $owner.Show()
+      $owner.Activate()
+      if ($dialog.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) {
+        [Console]::Write($dialog.SelectedPath)
+      }
+    } finally { $dialog.Dispose(); $owner.Dispose() }
+  `;
+  const powershell = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  return new Promise((resolve, reject) => {
+    execFile(powershell, ['-NoProfile', '-STA', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], {
+      windowsHide: true, encoding: 'utf8', timeout: 300000,
+      env: { ...process.env, MD_STUDIO_PICKER_START: initialPath || '' }
+    }, (err, stdout) => err ? reject(new Error('Could not open the folder picker. Try again or paste a path and save it.')) : resolve(stdout.trim() || null));
+  });
+}
+
+app.locals.saveConfig = saveConfig;
+app.locals.pickFolder = pickFolder;
+let pickerOpen = false;
 
 app.use((req, res, next) => {
   const host = req.headers.host;
@@ -65,24 +122,30 @@ app.get('/api/workspace', (req, res) => {
 
 // POST /api/workspace/set — change workspace at runtime (persists it)
 app.post('/api/workspace/set', (req, res) => {
-  const { path: newPath } = req.body;
-  if (!newPath) {
-    return res.status(400).json({ error: 'Missing path' });
+  try {
+    if (pickerOpen) return res.status(409).json({ error: 'Close the folder picker first' });
+    res.json(selectWorkspace(req.body.path));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
   }
+});
 
-  const absPath = path.resolve(newPath);
-  if (!fs.existsSync(absPath) || !fs.statSync(absPath).isDirectory()) {
-    return res.status(400).json({ error: 'Not a valid directory: ' + newPath });
-  }
-
-  WORKSPACE = absPath;
-  config.workspace = absPath;
-  saveConfig(config);
-  res.json({ workspace: WORKSPACE, success: true });
+// A browser directory-upload control cannot supply the real local folder path.
+app.post('/api/workspace/browse', async (req, res) => {
+  if (pickerOpen) return res.status(409).json({ error: 'A folder picker is already open' });
+  pickerOpen = true;
+  try {
+    const selected = await app.locals.pickFolder(WORKSPACE || config.workspace || '');
+    if (!selected) return res.json({ cancelled: true });
+    res.json(selectWorkspace(selected));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  } finally { pickerOpen = false; }
 });
 
 // POST /api/workspace/clear — forget workspace (for explicit reset)
 app.post('/api/workspace/clear', (req, res) => {
+  if (pickerOpen) return res.status(409).json({ error: 'Close the folder picker first' });
   WORKSPACE = null;
   delete config.workspace;
   saveConfig(config);

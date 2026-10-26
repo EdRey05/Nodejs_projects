@@ -35,8 +35,8 @@ switch($DemoApp){
  '002_MD_Studio'{
   New-Item -ItemType Directory C:\SyntheticMarkdown -Force | Out-Null
   Copy-Item C:\Fixtures\002\Notebook.md C:\SyntheticMarkdown\Notebook.md
-  Step 'Mount a disposable folder of Markdown notes' (Fill '#mount-path' 'C:\SyntheticMarkdown') 2
-  Step 'Open the workspace' (Click 'Mount Workspace') 2
+  Step 'Enter a disposable folder of Markdown notes' (Fill '#mount-path' 'C:\SyntheticMarkdown') 2
+  Step 'Save the path and open the workspace' (Click 'Save path') 2
   Step 'Open source and live preview side by side' 'openFile("Notebook.md");true' 3
   $content="# Synthetic project notebook`n`n## Updated in MD Studio`n`n- [x] Edit source`n- [x] Inspect live preview`n- [x] Save a real Markdown file`n`n**Everything here is fictional.**"
   Step 'Edit the source; the preview updates automatically' (Fill '.split-editor textarea' $content) 4

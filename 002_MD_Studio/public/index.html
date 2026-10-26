@@ -60,14 +60,16 @@
       <div class="mount-form">
         <input type="text" id="mount-path" placeholder="C:\\Users\\..." autocomplete="off" spellcheck="false">
         <div class="mount-actions">
-          <button class="btn-primary" onclick="doMount()">Mount Workspace</button>
+          <button class="btn-primary" id="browse-workspace" onclick="browseWorkspace()">Browse folders…</button>
+          <button class="btn-secondary" onclick="doMount()">Save path</button>
           <button class="btn-secondary" onclick="clearMount()">Clear Saved</button>
+          <button class="btn-secondary" id="cancel-workspace" onclick="cancelWorkspaceChange()" hidden>Back to workspace</button>
         </div>
       </div>
 
       <div class="mount-note">
-        Paste your Markdown folder path above. Split shows source and live preview.
-        <br>Save a path above and MD Studio will remember it for next time.
+        Browse for a folder, or paste a path and choose Save path (Enter).
+        <br>Your folder opens immediately and is remembered for next time.
       </div>
     </div>
   </div>
@@ -143,6 +145,8 @@
     let expandedFolders = new Set(['']);
     let sidebarCollapsed = false;
     let splitSyncEnabled = true;
+    let activeWorkspace = null;
+    let workspaceBusy = false;
 
     // ─── Mount / Workspace Logic ────────────────────────────────────────
 
@@ -162,9 +166,20 @@
     function showMount() {
       document.getElementById('mount-screen').style.display = '';
       document.getElementById('editor-screen').style.display = 'none';
+      document.getElementById('mount-path').value = activeWorkspace || '';
+      document.getElementById('cancel-workspace').hidden = !activeWorkspace;
     }
 
     function showEditor(workspacePath) {
+      cleanupSplit();
+      currentFile = null;
+      currentContent = '';
+      isDirty = false;
+      expandedFolders = new Set(['']);
+      activeWorkspace = workspacePath;
+      document.getElementById('editor-body').innerHTML = '<div class="empty-state">Select a file from the explorer</div>';
+      document.getElementById('file-status').textContent = 'No file selected';
+      document.getElementById('save-btn').disabled = true;
       document.getElementById('mount-screen').style.display = 'none';
       document.getElementById('editor-screen').style.display = '';
       document.getElementById('workspace-display').textContent = workspacePath;
@@ -172,7 +187,26 @@
       loadTree();
     }
 
+    function setWorkspaceBusy(value) {
+      workspaceBusy = value;
+      document.querySelectorAll('.mount-form button, .mount-form input').forEach(el => { el.disabled = value; });
+      document.getElementById('browse-workspace').textContent = value ? 'Please wait…' : 'Browse folders…';
+    }
+
+    async function browseWorkspace() {
+      if (workspaceBusy) return;
+      setWorkspaceBusy(true);
+      try {
+        const result = await API.browseWorkspace();
+        if (result.cancelled) return;
+        if (!result.success) throw new Error(result.error || 'Could not select a folder');
+        showEditor(result.workspace);
+      } catch (err) { showToast(err.message, 'error'); }
+      finally { setWorkspaceBusy(false); }
+    }
+
     async function doMount() {
+      if (workspaceBusy) return;
       const input = document.getElementById('mount-path');
       const path = input.value.trim();
       if (!path) {
@@ -180,21 +214,24 @@
         return;
       }
       try {
+        setWorkspaceBusy(true);
         const result = await API.setWorkspace(path);
         if (result.success) {
-          showToast('Workspace mounted!', 'success');
+          showToast('Workspace saved', 'success');
           showEditor(result.workspace);
         } else {
           showToast(result.error || 'Failed to mount', 'error');
         }
       } catch (err) {
         showToast('Error: ' + err.message, 'error');
-      }
+      } finally { setWorkspaceBusy(false); }
     }
 
     async function clearMount() {
       try {
         await API.clearWorkspace();
+        activeWorkspace = null;
+        document.getElementById('cancel-workspace').hidden = true;
         document.getElementById('mount-path').value = '';
         showToast('Saved workspace cleared', 'info');
       } catch (err) {
@@ -202,13 +239,15 @@
       }
     }
 
-    async function changeWorkspace() {
-      try {
-        await API.clearWorkspace();
-        showMount();
-      } catch (err) {
-        showToast('Error: ' + err.message, 'error');
-      }
+    function changeWorkspace() {
+      if (isDirty && !confirm('Discard unsaved changes and change workspace?')) return;
+      showMount();
+    }
+
+    function cancelWorkspaceChange() {
+      if (workspaceBusy || !activeWorkspace) return;
+      document.getElementById('mount-screen').style.display = 'none';
+      document.getElementById('editor-screen').style.display = '';
     }
 
     // ─── File Tree ──────────────────────────────────────────────────
@@ -382,9 +421,11 @@
     }
 
     let splitDebounce = null;
+    let disconnectSplitScroll = null;
 
     function cleanupSplit() {
       if (splitDebounce) { clearTimeout(splitDebounce); splitDebounce = null; }
+      if (disconnectSplitScroll) { disconnectSplitScroll(); disconnectSplitScroll = null; }
     }
 
     async function renderSplit() {
@@ -398,7 +439,7 @@
       body.innerHTML = `
         <div class="split-layout">
           <div class="split-pane split-preview" id="split-preview-pane">
-            <div class="preview" id="split-preview-content"></div>
+            <div class="preview" id="split-preview-content" tabindex="0" aria-label="Markdown preview"></div>
           </div>
           <div class="split-divider"></div>
           <div class="split-pane split-editor">
@@ -429,36 +470,10 @@
       // initial render
       updatePreview();
 
-      // ─── Percentage-based scroll sync ───────────────────────────────
+      // The active user-controlled pane drives the other, without feedback.
       const editorPane = body.querySelector('.split-editor textarea');
       const previewPane = body.querySelector('.split-preview .preview');
-      let isSyncing = false;
-
-      function syncScroll(source, target) {
-        if (!splitSyncEnabled || !source || !target || isSyncing) return;
-        const sH = source.scrollHeight - source.clientHeight;
-        const tH = target.scrollHeight - target.clientHeight;
-        if (sH <= 0 || tH <= 0) return;
-        let ratio = source.scrollTop / sH;
-        if (source === previewPane) {
-          // Preview driving editor: editor must scroll slightly MORE
-          ratio = Math.min(1, ratio + 0.06);
-        } else {
-          // Editor driving preview: preview jumps AHEAD, pull it back
-          ratio = Math.max(0, ratio - 0.04);
-        }
-        const targetTop = ratio * tH;
-        // Deadzone: skip if already close (avoids jitter from echo events)
-        if (Math.abs(target.scrollTop - targetTop) < 2) return;
-        isSyncing = true;
-        target.scrollTop = targetTop;
-        // Clear flag in next tick — echo scroll events fire synchronously
-        // in the same tick, so this blocks them cleanly.
-        setTimeout(() => { isSyncing = false; }, 0);
-      }
-
-      editorPane.addEventListener('scroll', () => syncScroll(editorPane, previewPane));
-      previewPane.addEventListener('scroll', () => syncScroll(previewPane, editorPane));
+      disconnectSplitScroll = connectSplitScroll(editorPane, previewPane, () => splitSyncEnabled);
     }
 
     function getEditorContent() {

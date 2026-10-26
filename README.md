@@ -1,24 +1,24 @@
-## 002 · MD Studio
+## 002 · Markdown Studio
 
 <details markdown="1">
 <summary>Expand this to read more...</summary>
 
-**Edit local Markdown with source and live preview side by side.** Mount a folder, select a Markdown file, edit it in Split view and save directly to the original file.
+**Edit local Markdown with source and live preview side by side.** Choose a folder, select or create a Markdown file, edit it in Split view and save directly to the original file.
 
-[![MD Studio recording](Images_GIFs_Videos/002_MD_Studio.gif)](Images_GIFs_Videos/002_MD_Studio.mp4)
+[![Markdown Studio recording](Images_GIFs_Videos/002_MD_Studio.gif)](Images_GIFs_Videos/002_MD_Studio.mp4)
 
 [Watch the MP4](Images_GIFs_Videos/002_MD_Studio.mp4) · [App instructions and source](https://github.com/EdRey05/Nodejs_projects/tree/main/002_MD_Studio) · [Synthetic sample](demo-data/002/Notebook.md)
 
 **How to use it**
 
 1. Extract the Windows portable folder and double-click Start.cmd.
-2. Paste your Markdown folder path and select Mount Workspace.
+2. Use Browse folders to choose your Markdown folder in the Windows dialog, or paste a path and choose Save path. The folder opens immediately and is remembered for next time.
 3. Open a .md file. Edit source on the left and inspect the live preview on the right.
 4. Click Save or press Ctrl+S. Use Stop.cmd when finished.
 
-**In the demo:** mount a disposable folder, edit a fictional project notebook, inspect the live preview, save and reopen the actual output. Browser automation supplies the synthetic folder path and drives the real editor. Preview HTML is sanitized; external images and links may still need internet. Closing the browser tab does not stop the background app.
+**In the demo:** select the examples folder with the real Windows picker, edit an existing notebook, then create a longer document with headings, bold, italics, underlining, bullet and numbered lists, checkboxes, quotations, tables and code blocks. Scroll through the synchronized panes, save and reopen the actual file. Underlining and crossed-out text use supported inline HTML. The recording uses the packaged app in an offline sandbox, with pauses trimmed and folder navigation accelerated. Preview HTML is sanitized; external images and links may still need internet. Closing the browser tab does not stop the background app.
 
-[Verified example output](demo-data/002/Notebook-edited.md)
+[Edited notebook](demo-data/002/Notebook-edited.md) · [Long Markdown example](demo-data/002/Markdown-showcase.md)
 
 </details>
 

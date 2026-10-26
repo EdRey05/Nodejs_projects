@@ -1,9 +1,11 @@
 # Synthetic project notebook
 
-## Updated in MD Studio
+A fictional notebook, edited in MD Studio.
 
-- [x] Edit source
-- [x] Inspect live preview
-- [x] Save a real Markdown file
+## Ready for review
 
-**Everything here is fictional.**
+- [x] Open the folder with the Windows picker
+- [x] Edit Markdown beside its live preview
+- [x] Save the updated example
+
+**Next:** create a longer notebook with lists, tables and code.
