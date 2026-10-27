@@ -1,0 +1,66 @@
+{
+  "synthetic": true,
+  "asOf": "2026-10-25",
+  "periodStart": "2024-01-02",
+  "currency": "USD",
+  "months": 34,
+  "accounts": 3,
+  "transactions": 451,
+  "counts": {
+    "demo_savings": 73,
+    "demo_managed": 46,
+    "demo_self": 332
+  },
+  "typeCounts": {
+    "demo_savings": {
+      "contribution": 35,
+      "interest": 34,
+      "withdrawal": 4
+    },
+    "demo_managed": {
+      "contribution": 35,
+      "dividend": 11
+    },
+    "demo_self": {
+      "contribution": 35,
+      "buy": 146,
+      "dividend": 67,
+      "stock-lending": 34,
+      "interest": 34,
+      "distribution": 11,
+      "sell": 3,
+      "withdrawal": 2
+    }
+  },
+  "savingsBalance": 25399.89,
+  "managedBalance": 32802.48,
+  "selfDirected": {
+    "cash": 11305.66,
+    "holdingsCost": 54600.01,
+    "balance": 65905.67,
+    "realizedGain": 450.3,
+    "positions": {
+      "VTI": {
+        "cost": 38220.000200607385,
+        "shares": 159.45437499999997
+      },
+      "AAPL": {
+        "cost": 5460.004626448641,
+        "shares": 28.205221999999996
+      },
+      "MSFT": {
+        "cost": 5460,
+        "shares": 15.040443999999992
+      },
+      "O": {
+        "cost": 5460.003986472035,
+        "shares": 101.410036
+      }
+    },
+    "categoryCost": {
+      "Stock ETF": 38220.000200607385,
+      "Individual Stock": 10920.004626448641,
+      "REIT": 5460.003986472035
+    }
+  }
+}

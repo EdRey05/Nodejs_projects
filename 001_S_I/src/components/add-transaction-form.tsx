@@ -20,10 +20,10 @@ import type { TransactionType } from "@/lib/types";
 const formSchema = z.object({
   amount: z.coerce.number().positive("Amount must be positive."),
   date: z.date(),
-  type: z.enum(["contribution", "withdrawal", "interest"]),
+  type: z.enum(["contribution", "withdrawal", "interest", "dividend"]),
 });
 
-export function AddTransactionForm({ accountId }: { accountId: string }) {
+export function AddTransactionForm({ accountId, cashOnly = false }: { accountId: string; cashOnly?: boolean }) {
   const { addTransaction, transactions, accounts } = useAccounts();
   const { toast } = useToast();
   const account = accounts.find(acc => acc.id === accountId);
@@ -37,6 +37,10 @@ export function AddTransactionForm({ accountId }: { accountId: string }) {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (cashOnly && values.type !== 'contribution' && values.type !== 'withdrawal') {
+      form.setError('type', { message: 'Choose a contribution or withdrawal.' });
+      return;
+    }
     const maxId = transactions.reduce((max, txn) => {
         const currentId = parseInt(txn.id.replace('txn_', ''), 10);
         return isNaN(currentId) ? max : Math.max(max, currentId);
@@ -81,16 +85,15 @@ export function AddTransactionForm({ accountId }: { accountId: string }) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="contribution">Contribution</SelectItem>
                   <SelectItem value="withdrawal">Withdrawal</SelectItem>
-                  {account?.type === 'savings' && (
-                    <SelectItem value="interest">Interest</SelectItem>
-                  )}
+                  {!cashOnly && <SelectItem value="interest">Interest</SelectItem>}
+                  {!cashOnly && account?.type === 'investment' && <SelectItem value="dividend">Dividend</SelectItem>}
                 </SelectContent>
               </Select>
               <FormMessage />

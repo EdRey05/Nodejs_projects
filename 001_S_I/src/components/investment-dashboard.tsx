@@ -35,16 +35,13 @@ export function InvestmentDashboard({ account, transactions }: InvestmentDashboa
 
   if (account.subtype === 'self-directed') {
     return (
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="flex flex-col gap-6 lg:col-span-3">
-          <AccountSummaryCard account={account} transactions={transactions} />
-          <GrowthChartCard account={account} transactions={transactions} />
-          <AssetPerformanceCard account={account} transactions={transactions} />
-        </div>
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          <SelfDirectedTransactionsCard account={account} transactions={transactions} />
-          <AssetAllocationCard transactions={transactions} />
-        </div>
+      <div className="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-2" data-testid="self-directed-dashboard">
+        <AccountSummaryCard account={account} transactions={transactions} />
+        <AssetAllocationCard transactions={transactions} />
+        <GrowthChartCard account={account} transactions={transactions} />
+        <SelfDirectedTransactionsCard account={account} transactions={transactions} mode="entry" />
+        <div className="xl:col-span-2"><SelfDirectedTransactionsCard account={account} transactions={transactions} /></div>
+        <AssetPerformanceCard account={account} transactions={transactions} />
       </div>
     );
   }

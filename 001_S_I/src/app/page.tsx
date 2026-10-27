@@ -1,58 +1,25 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import type { Account } from '@/lib/types';
 import { AccountsProvider } from '@/contexts/accounts-context';
+import { useWorkbookController } from '@/hooks/use-workbook';
 import { Header } from '@/components/header';
 import { Dashboard } from '@/components/dashboard';
-import { useToast } from "@/hooks/use-toast";
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const { toast } = useToast();
-
-  const contextValue = useMemo(() => {
-    const addAccount = (account: Account) => {
-      setAccounts(prev => [...prev, account]);
-    };
-
-    const deleteAccount = (accountId: string) => {
-      setAccounts(prev => prev.filter(acc => acc.id !== accountId));
-      setTransactions(prev => prev.filter(txn => txn.accountId !== accountId));
-    };
-
-    const addTransaction = (transaction: any) => {
-      setTransactions(prev => [...prev, transaction]);
-    };
-    
-    const loadData = (data: { accounts: Account[], transactions: any[] }) => {
-        setAccounts(data.accounts);
-        setTransactions(data.transactions);
-        toast({
-            title: "Data imported successfully!",
-            description: `${data.accounts.length} accounts and ${data.transactions.length} transactions have been loaded.`,
-        });
-    };
-
-    return {
-      accounts,
-      transactions,
-      addAccount,
-      deleteAccount,
-      addTransaction,
-      loadData,
-    }
-  }, [accounts, transactions, toast]);
-
-  return (
-    <AccountsProvider value={contextValue}>
-      <div className="flex min-h-screen w-full flex-col">
-        <Header />
-        <main className="flex-1 p-4 sm:p-6 md:p-8">
-          <Dashboard />
-        </main>
-      </div>
-    </AccountsProvider>
-  );
+  const workbook = useWorkbookController();
+  return <AccountsProvider value={workbook}>
+    <div className="flex min-h-screen w-full flex-col">
+      <Header />
+      {(workbook.accounts.length > 0 || workbook.saveError) && <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b px-4 py-2 text-xs text-muted-foreground sm:px-8" data-testid="workbook-status" role="status">
+        <span className="min-w-0 break-all">{workbook.filePath || 'Open a workbook to remember its location and save changes automatically.'}</span>
+        <span className={workbook.saveError ? 'text-destructive' : ''}>{workbook.saveError || (workbook.saving ? 'Saving…' : workbook.filePath ? (workbook.isDirty ? 'Unsaved changes' : 'Saved') : workbook.accounts.length ? 'Temporary copy — export to keep changes' : '')}</span>
+        {workbook.saveError && <>
+          {workbook.isDirty && <Button size="sm" variant="outline" onClick={workbook.retrySave}>Retry saving</Button>}
+          {workbook.filePath && <Button size="sm" variant="outline" onClick={() => { void workbook.reloadWorkbook().catch(error => window.alert(error.message)); }}>Reload file</Button>}
+        </>}
+      </div>}
+      <main className="flex-1 p-4 sm:p-6 md:p-8"><Dashboard /></main>
+    </div>
+  </AccountsProvider>;
 }

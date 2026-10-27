@@ -29,21 +29,23 @@
 <details markdown="1">
 <summary>Expand this to read more...</summary>
 
-**Explore savings and investment records from an Excel workbook.** Import accounts and transactions, inspect charts, add a transaction and export the updated workbook. This older personal project is retained as an offline runnable example.
+**Explore savings and investment records from an Excel workbook.** Open a local workbook, inspect charts and edit accounts/transactions with automatic saving and reopening of the previous file. Export remains available for separate copies. The Windows portable v1.0.0 includes savings, managed and self-directed dashboards.
 
 [![Finance tracker recording](Images_GIFs_Videos/001_S_I.gif)](Images_GIFs_Videos/001_S_I.mp4)
 
-[Watch the MP4](Images_GIFs_Videos/001_S_I.mp4) · [App instructions and workbook format](https://github.com/EdRey05/Nodejs_projects/tree/main/001_S_I) · [Synthetic workbook](demo-data/001/Synthetic_FinancialData.xlsx)
+[Watch the MP4](Images_GIFs_Videos/001_S_I.mp4) · [App instructions and workbook format](https://github.com/EdRey05/Nodejs_projects/tree/main/001_S_I) · [Synthetic portfolio](demo-data/001/Synthetic_Portfolio.xlsx)
 
 **How to use it**
 
 1. Extract the Windows portable folder and double-click Start.cmd.
-2. Open Manage & Import and import the synthetic workbook.
+2. In Manage & Import, choose Open workbook and select a local .xlsx file (use a copy of the synthetic sample when experimenting).
 3. Select an account, inspect transactions/charts and add entries.
-4. Export the workbook before refreshing or closing; changes are held in memory. Use Stop.cmd when finished.
+4. Wait for Saved; edits go back to the selected file, which reopens on the next launch. Export downloads a separate copy. Temporary imports still require Export. Use Stop.cmd when finished.
 
-**In the demo:** import three fictional accounts with thirty transactions, verify a $4,290 savings balance, add a $100 contribution and export the resulting workbook. File selection and UI actions are automated against the actual packaged application; no result screens are simulated. Calculations are simplified personal tracking, not brokerage valuation or financial advice. No AI or cloud account is used.
+**In the demo:** use the Windows file picker to open a fictional portfolio with 451 transactions across three accounts. Add a $100 savings contribution, inspect historical growth and set a projection to $250 per month at 5% for 20 years. Explore managed investing, then self-directed holdings/income allocation, growth projections, cash movements, transaction history and six asset-performance charts. File-browser navigation is accelerated; the dashboard actions and pauses retain their original speed. All footage shows the actual packaged app in an offline sandbox.
 
-[Verified example output](demo-data/001/FinancialData.xlsx)
+Self-directed balances include cash plus holdings at average cost. Contributions and withdrawals move money between your pocket and the account; purchases use cash, while sales and income stay in cash until reinvested or withdrawn. Allocation charts and simplified projections do not use live market prices. No AI or cloud account is used.
+
+[Sample details and expected balances](demo-data/README.md)
 
 </details>

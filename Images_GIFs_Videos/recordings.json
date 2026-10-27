@@ -1,12 +1,12 @@
 [
   {
-    "posterSha256": "D374D714550B0DC484B8DD191A66A37863F3DA154C46CE297DA775A682BB39B1",
-    "artifactSha256": "AC258050CFBE86C520FBF0EDBBC4C551BE0073FB4960B9EE04460A0215765D89",
-    "capture": "Real Edge renderer, measured frame timing; no audio; CDP UI automation",
+    "posterSha256": "5463EB92AC9571BF1F484EBB9E9A28F6F6259253FDAAB87A3442F8FF34996DB3",
+    "artifactSha256": "E07AF75D4032E09BB6AC7CFCB319DF98CF5E534D05F5327594C020A2AA7FCFBC",
+    "capture": "Actual offline Windows Sandbox native file picker and Edge renderer; synthetic portfolio only; silent",
     "gifSpeed": "2x",
     "app": "001_S_I",
-    "videoSha256": "C62805AF03B0F44E381C9DA309DDA196E36D68FA94A5F4A8E4AC00E41415965E",
-    "gifSha256": "23A2DD4A9B7BE3162E85386E7873531267219A1720694A97CCAE0B81265F49AC",
+    "videoSha256": "46974A3A89DD0024BCE26FA892B301F5AD98F8A980B8629922CF132249AAD2A3",
+    "gifSha256": "063FE132BAE44B481FC3601E010C34EFDAFFA2514AE32B5AA4A9ED8DCF2EC0BB",
     "metadata": {
       "programs": [],
       "stream_groups": [],
@@ -15,17 +15,34 @@
           "codec_name": "h264",
           "width": 1280,
           "height": 800,
-          "nb_frames": "411",
+          "r_frame_rate": "12/1",
           "side_data_list": [
             {}
           ]
         }
       ],
       "format": {
-        "duration": "34.250000",
-        "size": "343453"
+        "duration": "101.250000",
+        "size": "3448453"
       }
-    }
+    },
+    "version": "1.0.0",
+    "recordedAppVersion": "0.2.0",
+    "artifactProvenance": "Validated development package used for filming; app runtime source matches v1.0.0, with release version/docs/media finalized afterward.",
+    "editing": "Real intro, native selection and complete dashboard takes; idle/failed navigation omitted; native traversal accelerated to about 6.5 seconds, dashboard timing and pauses preserved",
+    "gifFps": 4,
+    "verified": [
+      "native-workbook-selected",
+      "savings-contribution-saved-back",
+      "calendar-date-unchanged",
+      "projection-250-monthly-5-percent-20-years",
+      "managed-dashboard-traversal",
+      "both-allocation-tooltips",
+      "growth-and-activity-tabs",
+      "nested-history-scroll",
+      "six-performance-graphs-with-pauses",
+      "full-video-and-gif-decode"
+    ]
   },
   {
     "app": "002_MD_Studio",

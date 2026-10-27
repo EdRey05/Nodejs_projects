@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue'
+$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue'
 if($env:USERNAME -ne 'WDAGUtilityAccount' -or !(Test-Path C:\Runner\recipe.json)){throw 'Guest-only script'}
 [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12
 Start-Transcript C:\Export\build.log
@@ -29,6 +29,11 @@ try{
    Run npm.cmd @('ci','--no-audit','--no-fund')
    if($profile.kind -eq 'next'){
     Run npm.cmd @('run','typecheck')
+    $testPackage=Get-Content package.json -Raw | ConvertFrom-Json
+    if($testPackage.scripts.test){
+      $env:NODEJS_DEMO_DATA='C:\Runner\source\demo-data'
+      Run npm.cmd @('test')
+    }
     Run npm.cmd @('run','build')
    }else{Run npm.cmd @('test')}
    $pkg=Get-Content package.json -Raw | ConvertFrom-Json
@@ -70,7 +75,12 @@ try{
     Copy-Item C:\Runner\python-runtime.json C:\Export
    }
    $demoId=$id.Substring(0,3)
-   if(Test-Path "C:\Runner\source\demo-data\$demoId"){Copy-Item "C:\Runner\source\demo-data\$demoId" "$folder\examples" -Recurse}
+   if($id -eq '001_S_I'){
+    New-Item -ItemType Directory "$folder\examples" -Force | Out-Null
+    Copy-Item "C:\Runner\source\demo-data\001\Synthetic_Portfolio.xlsx" "$folder\examples"
+   }elseif(Test-Path "C:\Runner\source\demo-data\$demoId"){
+    Copy-Item "C:\Runner\source\demo-data\$demoId" "$folder\examples" -Recurse
+   }
    'Extract this entire folder to a writable location. Double-click Start.cmd to open the app. Double-click Stop.cmd when finished. Closing the browser tab does not stop the background service. No developer tools are required. See README.md for data locations and limitations.' | Set-Content "$folder\START-HERE.txt"
    Copy-Item C:\Runner\source\LICENSE $folder
    if(Test-Path "$app\README.md"){Copy-Item "$app\README.md" $folder}

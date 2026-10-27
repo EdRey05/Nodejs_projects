@@ -21,10 +21,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast";
-import type { Account, Transaction } from "@/lib/types";
+import { readWorkbook, createWorkbook } from '@/lib/workbook';
 
 export function AccountManager({ children }: { children: React.ReactNode }) {
-  const { accounts, transactions, deleteAccount, loadData } = useAccounts();
+  const { accounts, transactions, deleteAccount, loadData, openWorkbook, loading, saving, markExported } = useAccounts();
   const [isAddFormOpen, setAddFormOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -44,32 +44,9 @@ export function AccountManager({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    const accountsWs = XLSX.utils.json_to_sheet(accounts);
-
-    const savingsTxns = transactions.filter(txn => {
-        const account = accounts.find(acc => acc.id === txn.accountId);
-        return account?.type === 'savings';
-    });
-    const managedInvestmentTxns = transactions.filter(txn => {
-        const account = accounts.find(acc => acc.id === txn.accountId);
-        return account?.type === 'investment' && account.subtype === 'managed';
-    });
-    const selfDirectedInvestmentTxns = transactions.filter(txn => {
-        const account = accounts.find(acc => acc.id === txn.accountId);
-        return account?.type === 'investment' && account.subtype === 'self-directed';
-    });
-
-    const savingsTxnsWs = XLSX.utils.json_to_sheet(savingsTxns);
-    const managedTxnsWs = XLSX.utils.json_to_sheet(managedInvestmentTxns);
-    const selfDirectedTxnsWs = XLSX.utils.json_to_sheet(selfDirectedInvestmentTxns);
-    
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, accountsWs, "Accounts");
-    XLSX.utils.book_append_sheet(wb, savingsTxnsWs, "S_Transactions");
-    XLSX.utils.book_append_sheet(wb, managedTxnsWs, "I_M_Transactions");
-    XLSX.utils.book_append_sheet(wb, selfDirectedTxnsWs, "I_SD_Transactions");
-    
+    const wb = createWorkbook({ accounts, transactions });
     XLSX.writeFile(wb, "FinancialData.xlsx");
+    markExported();
 
     toast({
         title: "Export Successful!",
@@ -77,72 +54,17 @@ export function AccountManager({ children }: { children: React.ReactNode }) {
     });
   }
 
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const data = e.target?.result;
-            const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-
-            const accountsSheet = workbook.Sheets['Accounts'];
-            const savingsTxnsSheet = workbook.Sheets['S_Transactions'];
-            const managedTxnsSheet = workbook.Sheets['I_M_Transactions'];
-            const selfDirectedTxnsSheet = workbook.Sheets['I_SD_Transactions'];
-
-            if (!accountsSheet) {
-                throw new Error("Invalid file format. 'Accounts' sheet is required.");
-            }
-
-            const importedAccounts = XLSX.utils.sheet_to_json(accountsSheet) as Account[];
-            const importedSavingsTxns = savingsTxnsSheet ? XLSX.utils.sheet_to_json(savingsTxnsSheet) as Transaction[] : [];
-            const importedManagedTxns = managedTxnsSheet ? XLSX.utils.sheet_to_json(managedTxnsSheet) as Transaction[] : [];
-            const importedSelfDirectedTxns = selfDirectedTxnsSheet ? XLSX.utils.sheet_to_json(selfDirectedTxnsSheet) as Transaction[] : [];
-            
-            const combinedTransactions = [
-                ...importedSavingsTxns, 
-                ...importedManagedTxns, 
-                ...importedSelfDirectedTxns
-            ];
-
-            const finalTransactions = combinedTransactions.map((txn: any) => ({
-                ...txn,
-                date: txn.date instanceof Date ? txn.date.toISOString() : txn.date,
-            }));
-
-            const ids = new Set(importedAccounts.map(account => account.id));
-            if (ids.size !== importedAccounts.length || importedAccounts.some(account =>
-                typeof account.id !== 'string' || !account.id || !account.name || !account.bank ||
-                !['savings', 'investment'].includes(account.type) ||
-                (account.type === 'investment' && !['managed', 'self-directed'].includes(account.subtype || '')))) {
-                throw new Error('Accounts must have unique IDs, names, banks and valid types/subtypes.');
-            }
-            if (finalTransactions.some(txn => !ids.has(txn.accountId) || typeof txn.id !== 'string' ||
-                !Number.isFinite(txn.amount) || txn.amount < 0 || !Number.isFinite(Date.parse(txn.date)) ||
-                !['contribution','withdrawal','interest','buy','sell','dividend','stock-lending','distribution'].includes(txn.type))) {
-                throw new Error('Transactions must reference an account and contain a valid ID, amount, date and type.');
-            }
-            loadData({ accounts: importedAccounts, transactions: finalTransactions });
-
-        } catch (error) {
-            console.error("Failed to import data:", error);
-            toast({
-                variant: "destructive",
-                title: "Import Failed",
-                description: error instanceof Error ? error.message : "An unknown error occurred while importing the file.",
-            });
-        } finally {
-            if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-            }
-        }
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
-  const triggerFileSelect = () => fileInputRef.current?.click();
+    try { loadData(readWorkbook(await file.arrayBuffer())); }
+    catch (error) { toast({ variant: 'destructive', title: 'Import failed', description: error instanceof Error ? error.message : 'Could not read the workbook.' }); }
+    finally { if (fileInputRef.current) fileInputRef.current.value = ''; }
+  };
+  const chooseWorkbook = async (fullPath?: string) => {
+    try { await openWorkbook(fullPath); }
+    catch (error) { toast({ variant: 'destructive', title: 'Could not open workbook', description: error instanceof Error ? error.message : 'Choose another file.' }); }
+  };
 
   return (
     <>
@@ -159,7 +81,7 @@ export function AccountManager({ children }: { children: React.ReactNode }) {
           <SheetHeader>
             <SheetTitle>Account Management</SheetTitle>
             <SheetDescription>
-              Add, remove, and manage your accounts. Import/Export your data.
+              Open a workbook to save changes automatically and reopen it next time. Export makes a separate copy.
             </SheetDescription>
           </SheetHeader>
           <div className="mt-4 space-y-4 py-4 flex-1 overflow-y-auto">
@@ -194,20 +116,21 @@ export function AccountManager({ children }: { children: React.ReactNode }) {
               <p className="text-center text-muted-foreground py-8">No accounts yet. Import a file or add an account.</p>
             )}
           </div>
-          <SheetFooter className="mt-auto flex flex-col gap-4 pt-4 border-t">
+          <SheetFooter className="mt-auto flex flex-col gap-4 pt-4 border-t sm:flex-col sm:items-stretch sm:space-x-0">
             <AddAccountForm open={isAddFormOpen} onOpenChange={setAddFormOpen}>
               <Button className="w-full justify-start">
                 <PlusCircle className="h-4 w-4" /> Add New Account
               </Button>
             </AddAccountForm>
-            <div className="flex gap-2">
-                <Button variant="outline" className="w-full justify-center" onClick={triggerFileSelect}>
-                    <Upload className="h-4 w-4" /> Import
+            <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" className="w-full justify-center" disabled={loading || saving} onClick={() => { void chooseWorkbook(); }}>
+                    <Upload className="h-4 w-4" /> {loading ? 'Please wait…' : 'Open workbook'}
                 </Button>
                 <Button variant="outline" className="w-full justify-center" onClick={handleExport}>
                   <Download className="h-4 w-4" /> Export
                 </Button>
             </div>
+            <Button variant="link" size="sm" className="h-auto whitespace-normal px-0 text-xs" disabled={loading || saving} onClick={() => fileInputRef.current?.click()}>Import a temporary copy (.xlsx / .xls)</Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>

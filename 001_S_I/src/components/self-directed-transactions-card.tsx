@@ -8,7 +8,10 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState, useEffect, useMemo } from 'react';
 
-import type { Account, Transaction, TransactionType, AssetCategory } from '@/lib/types';
+import type { Account, Transaction, AssetCategory } from '@/lib/types';
+import { calculatePortfolio, inferAssetCategory, normalizeAssetTransactions, assetCategories } from '@/lib/portfolio';
+import { AddTransactionForm } from './add-transaction-form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { useAccounts } from "@/contexts/accounts-context";
 import { useToast } from "@/hooks/use-toast";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -22,7 +25,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from './ui/separator';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import {
@@ -35,55 +37,47 @@ import {
 
 
 const formSchema = z.object({
-  logType: z.enum(["buy", "sell", "dividend", "stock-lending", "distribution"]),
+  logType: z.enum(["buy", "sell", "dividend", "stock-lending", "distribution", "interest"]),
   assetName: z.string().optional(),
-  assetCode: z.string().min(1, "Asset selection is required."),
+  assetCode: z.string().optional(),
   assetCategory: z.string().optional(),
   amount: z.coerce.number().positive("Amount must be positive."),
   shares: z.coerce.number().positive("Shares must be positive.").optional(),
   date: z.date(),
 }).superRefine((data, ctx) => {
+    if (data.logType !== 'interest' && !data.assetCode?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['assetCode'], message: 'Asset selection is required.' });
+    }
     if ((data.logType === 'buy' || data.logType === 'sell') && (!data.shares || data.shares <= 0)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['shares'], message: 'Shares must be a positive number.' });
     }
     if (data.logType === 'buy' && (!data.assetName || data.assetName.length === 0)) {
-        const assetCodeIsNew = !data.assetCode.includes('::'); // Heuristic to check if it's a new asset
+        const assetCodeIsNew = !data.assetCode?.includes('::'); // Heuristic to check if it's a new asset
         if (assetCodeIsNew) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['assetName'], message: 'Asset name is required for new assets.' });
         }
     }
 });
 
-const getAssetCategory = (assetName: string): AssetCategory => {
-    const upperName = assetName.toUpperCase();
-    const hasReit = upperName.includes('REIT');
-    const hasEtf = upperName.includes('ETF');
-
-    if (hasReit && hasEtf) return 'REIT ETF';
-    if (hasReit) return 'REIT';
-    if (hasEtf) return 'Stock ETF';
-    return 'Individual Stock';
-}
-
 function AddSelfDirectedTransactionForm({ accountId, uniqueAssets }: { accountId: string, uniqueAssets: {assetCode: string, assetName: string, assetCategory: AssetCategory | undefined}[] }) {
   const { addTransaction, transactions } = useAccounts();
   const { toast } = useToast();
-  const [logType, setLogType] = useState< 'buy' | 'sell' | 'dividend' | 'stock-lending' | 'distribution'>('buy');
+  const [logType, setLogType] = useState< 'buy' | 'sell' | 'dividend' | 'stock-lending' | 'distribution' | 'interest'>('buy');
   const [assetMode, setAssetMode] = useState<'new' | 'existing'>(uniqueAssets.length > 0 ? 'existing' : 'new');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { date: new Date(), logType: 'buy' },
+    defaultValues: { date: new Date(), logType: 'buy', assetCode: '', assetName: '', assetCategory: '' },
   });
 
   useEffect(() => {
-    form.reset({ date: new Date(), logType });
+    form.reset({ date: new Date(), logType, assetCode: '', assetName: '', assetCategory: '' });
     if (logType !== 'buy') {
         setAssetMode('existing');
     } else {
         setAssetMode(uniqueAssets.length > 0 ? 'existing' : 'new');
     }
-  }, [logType, form, uniqueAssets.length]);
+  }, [logType, form, uniqueAssets.length, accountId]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const maxId = transactions.reduce((max, txn) => {
@@ -94,28 +88,37 @@ function AddSelfDirectedTransactionForm({ accountId, uniqueAssets }: { accountId
 
     let category: AssetCategory;
     if (assetMode === 'new' && values.assetName) {
-        category = getAssetCategory(values.assetName);
+        category = (values.assetCategory as AssetCategory) || inferAssetCategory(values.assetName, values.assetCode) || 'Individual Stock';
     } else {
         category = values.assetCategory as AssetCategory;
     }
     
+    const accountTransactions = transactions.filter(txn => txn.accountId === accountId);
+    const portfolio = calculatePortfolio(accountTransactions);
+    const heldShares = portfolio.holdings.find(asset => asset.assetCode === values.assetCode?.trim().toUpperCase())?.shares || 0;
+    if (values.logType === 'sell' && (values.shares || 0) > heldShares + 1e-8) {
+      form.setError('shares', { message: `Only ${heldShares.toFixed(4)} shares are recorded.` }); return;
+    }
+    if (values.logType === 'buy' && accountTransactions.some(txn => txn.type === 'contribution') && values.amount > portfolio.cash + 0.005) {
+      form.setError('amount', { message: 'Record a deposit before purchasing more than the available cash.' }); return;
+    }
     const newTransaction: Transaction = {
       id: newId,
       accountId,
       type: values.logType,
       date: values.date.toISOString(),
       amount: values.amount,
-      assetName: values.assetName,
-      assetCode: values.assetCode,
-      assetCategory: category,
+      assetName: values.logType === 'interest' ? undefined : values.assetName,
+      assetCode: values.logType === 'interest' ? undefined : values.assetCode?.trim().toUpperCase(),
+      assetCategory: values.logType === 'interest' ? undefined : category,
       shares: (values.logType === 'buy' || values.logType === 'sell') ? values.shares : undefined,
     };
     addTransaction(newTransaction);
     toast({
-      title: "Trade logged!",
-      description: `Your ${values.logType} of ${values.assetCode} has been added.`,
+      title: "Activity logged!",
+      description: `Your ${values.logType}${values.assetCode ? ` for ${values.assetCode}` : ''} has been added.`,
     });
-    form.reset({ date: new Date(), logType });
+    form.reset({ date: new Date(), logType, assetCode: '', assetName: '', assetCategory: '' });
   }
 
   const getButtonText = () => {
@@ -124,6 +127,7 @@ function AddSelfDirectedTransactionForm({ accountId, uniqueAssets }: { accountId
     if (logType === 'dividend') return 'Log Dividend';
     if (logType === 'stock-lending') return 'Log Stock Lending';
     if (logType === 'distribution') return 'Log Distribution';
+    return 'Log Interest';
   }
 
   return (
@@ -137,6 +141,7 @@ function AddSelfDirectedTransactionForm({ accountId, uniqueAssets }: { accountId
                     <FormItem className="flex items-center space-x-2"><RadioGroupItem value="dividend" id="dividend" disabled={uniqueAssets.length === 0}/><Label htmlFor="dividend" className={`font-normal ${uniqueAssets.length === 0 ? 'text-muted-foreground cursor-not-allowed' : ''}`}>Dividend</Label></FormItem>
                     <FormItem className="flex items-center space-x-2"><RadioGroupItem value="stock-lending" id="stock-lending" disabled={uniqueAssets.length === 0}/><Label htmlFor="stock-lending" className={`font-normal ${uniqueAssets.length === 0 ? 'text-muted-foreground cursor-not-allowed' : ''}`}>Stock Lending</Label></FormItem>
                     <FormItem className="flex items-center space-x-2"><RadioGroupItem value="distribution" id="distribution" disabled={uniqueAssets.length === 0}/><Label htmlFor="distribution" className={`font-normal ${uniqueAssets.length === 0 ? 'text-muted-foreground cursor-not-allowed' : ''}`}>Distribution</Label></FormItem>
+                    <FormItem className="flex items-center space-x-2"><RadioGroupItem value="interest" id="interest" /><Label htmlFor="interest" className="font-normal">Interest</Label></FormItem>
                 </RadioGroup>
             </FormItem>
         )} />
@@ -150,27 +155,33 @@ function AddSelfDirectedTransactionForm({ accountId, uniqueAssets }: { accountId
             </FormItem>
         )}
         
-        {assetMode === 'new' && logType === 'buy' ? (
+        {assetMode === 'new' && logType === 'buy' && <FormField control={form.control} name="assetCategory" render={({ field }) => (
+          <FormItem><FormLabel>Asset category</FormLabel><Select onValueChange={field.onChange} value={field.value}>
+            <FormControl><SelectTrigger><SelectValue placeholder="Auto-detect from name, or choose" /></SelectTrigger></FormControl>
+            <SelectContent>{assetCategories.map(category => <SelectItem key={category} value={category}>{category}</SelectItem>)}</SelectContent>
+          </Select><FormMessage /></FormItem>
+        )} />}
+        {logType !== 'interest' && (assetMode === 'new' && logType === 'buy' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField control={form.control} name="assetName" render={({ field }) => ( <FormItem><FormLabel>Asset Name</FormLabel><FormControl><Input placeholder="e.g., Apple Inc." {...field} /></FormControl><FormMessage /></FormItem> )} />
             <FormField control={form.control} name="assetCode" render={({ field }) => ( <FormItem><FormLabel>Ticker</FormLabel><FormControl><Input placeholder="e.g., AAPL" {...field} /></FormControl><FormMessage /></FormItem> )} />
           </div>
         ) : (
-          <FormField control={form.control} name="assetCode" render={() => (
+          <FormField control={form.control} name="assetCode" render={({ field }) => (
             <FormItem><FormLabel>Asset</FormLabel>
-                <Select onValueChange={(v) => { const [code, name, category] = v.split('::'); form.setValue('assetCode', code, { shouldValidate: true }); form.setValue('assetName', name, { shouldValidate: true }); form.setValue('assetCategory', category, { shouldValidate: true }); }}>
+                <Select value={field.value || ''} onValueChange={(code) => { const asset = uniqueAssets.find(item => item.assetCode === code); field.onChange(code); form.setValue('assetName', asset?.assetName || '', { shouldValidate: true }); form.setValue('assetCategory', asset?.assetCategory || '', { shouldValidate: true }); }}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Select an existing asset" /></SelectTrigger></FormControl>
-                    <SelectContent>{uniqueAssets.map(asset => (<SelectItem key={asset.assetCode} value={`${asset.assetCode}::${asset.assetName}::${asset.assetCategory}`}>{asset.assetCode} - {asset.assetName}</SelectItem>))}</SelectContent>
+                    <SelectContent>{uniqueAssets.map(asset => (<SelectItem key={asset.assetCode} value={asset.assetCode}>{asset.assetCode} - {asset.assetName}</SelectItem>))}</SelectContent>
                 </Select><FormMessage />
             </FormItem>
           )} />
-        )}
+        ))}
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {logType === 'buy' || logType === 'sell' ? (
                 <>
                 <FormField control={form.control} name="shares" render={({ field }) => (<FormItem><FormLabel>Shares</FormLabel><FormControl><Input type="number" step="any" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="amount" render={({ field }) => (<FormItem><FormLabel>Total Cost</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="amount" render={({ field }) => (<FormItem><FormLabel>{logType === 'sell' ? 'Sale proceeds' : 'Total cost'}</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
                 </>
             ) : (
                 <FormField control={form.control} name="amount" render={({ field }) => (<FormItem className="col-span-2"><FormLabel>{logType === 'dividend' ? 'Dividend Amount' : 'Income'}</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
@@ -187,14 +198,15 @@ function AddSelfDirectedTransactionForm({ accountId, uniqueAssets }: { accountId
 type SelfDirectedTransactionsCardProps = {
   account: Account;
   transactions: Transaction[];
+  mode?: 'entry' | 'history';
 };
 
-export function SelfDirectedTransactionsCard({ account, transactions }: SelfDirectedTransactionsCardProps) {
+export function SelfDirectedTransactionsCard({ account, transactions, mode = 'history' }: SelfDirectedTransactionsCardProps) {
   const sortedTransactions = [...transactions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   const uniqueAssets = useMemo(() => {
     const assets = new Map<string, { assetName: string; assetCategory: AssetCategory | undefined }>();
-    transactions.forEach(txn => {
+    normalizeAssetTransactions(transactions).forEach(txn => {
         if (txn.assetCode && txn.assetName && !assets.has(txn.assetCode)) {
             assets.set(txn.assetCode, { assetName: txn.assetName, assetCategory: txn.assetCategory });
         }
@@ -205,16 +217,21 @@ export function SelfDirectedTransactionsCard({ account, transactions }: SelfDire
   }, [transactions]);
 
 
+  if (mode === 'entry') return <Card className="h-full">
+    <CardHeader><CardTitle>Record Activity</CardTitle><CardDescription>Purchases use cash; sales and income stay in the account until withdrawn.</CardDescription></CardHeader>
+    <CardContent><Tabs defaultValue="trade"><TabsList className="mb-4 grid w-full grid-cols-2"><TabsTrigger value="trade">Trades & income</TabsTrigger><TabsTrigger value="cash">Cash movements</TabsTrigger></TabsList>
+      <TabsContent value="trade"><AddSelfDirectedTransactionForm accountId={account.id} uniqueAssets={uniqueAssets} /></TabsContent>
+      <TabsContent value="cash"><p className="mb-4 text-sm text-muted-foreground">Money you add to this account or withdraw to your pocket.</p><AddTransactionForm accountId={account.id} cashOnly /></TabsContent>
+    </Tabs></CardContent>
+  </Card>;
   return (
     <Card className="flex flex-col">
       <CardHeader>
-        <CardTitle>Trade Log</CardTitle>
-        <CardDescription>History of all trades for {account.name}.</CardDescription>
+        <CardTitle>Activity History</CardTitle>
+        <CardDescription>Cash movements, trades and income for {account.name}.</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4">
-        <AddSelfDirectedTransactionForm accountId={account.id} uniqueAssets={uniqueAssets} />
-        <Separator />
-        <ScrollArea className="h-[57rem]">
+        <ScrollArea className="h-96">
           <Table>
             <TableHeader>
               <TableRow>
@@ -230,7 +247,7 @@ export function SelfDirectedTransactionsCard({ account, transactions }: SelfDire
                 <TableRow key={txn.id}>
                   <TableCell className="px-2">{format(new Date(txn.date), 'MMM d, yyyy')}</TableCell>
                   <TableCell className="px-2">
-                    <div className="font-medium">{txn.assetName}</div>
+                    <div className="font-medium">{txn.assetName || 'Cash'}</div>
                     <div className="text-xs text-muted-foreground">{txn.assetCode}</div>
                   </TableCell>
                   <TableCell className="px-2">
@@ -243,11 +260,11 @@ export function SelfDirectedTransactionsCard({ account, transactions }: SelfDire
                   </TableCell>
                    <TableCell className="text-right font-mono px-2">{txn.shares ? txn.shares.toFixed(4) : "N/A"}</TableCell>
                   <TableCell className={cn("text-right font-medium px-2",
-                      txn.type === 'buy' && 'text-destructive',
+                      (txn.type === 'buy' || txn.type === 'withdrawal') && 'text-destructive',
                       txn.type === 'sell' && 'text-positive',
                       (txn.type === 'dividend' || txn.type === 'stock-lending' || txn.type === 'distribution') && 'text-info'
                     )}>
-                    {txn.type === 'buy' ? '- ' : '+ '}{formatCurrency(txn.amount)}
+                    {txn.type === 'buy' || txn.type === 'withdrawal' ? '- ' : '+ '}{formatCurrency(txn.amount)}
                   </TableCell>
                 </TableRow>
               ))}

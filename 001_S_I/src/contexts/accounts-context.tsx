@@ -10,6 +10,15 @@ interface AccountsContextType {
   deleteAccount: (accountId: string) => void;
   addTransaction: (transaction: Transaction) => void;
   loadData: (data: { accounts: Account[], transactions: Transaction[] }) => void;
+  filePath: string | null;
+  loading: boolean;
+  saving: boolean;
+  isDirty: boolean;
+  saveError: string | null;
+  openWorkbook: (path?: string) => Promise<void>;
+  retrySave: () => void;
+  reloadWorkbook: () => Promise<void>;
+  markExported: () => void;
 }
 
 const AccountsContext = createContext<AccountsContextType | undefined>(undefined);

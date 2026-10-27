@@ -1,7 +1,9 @@
 import type { Transaction, AssetCategory } from './types';
+import { calculatePortfolio, normalizeAssetTransactions, type AllocationCategory } from './portfolio';
 import { addMonths, format, startOfMonth, isBefore, parseISO, isSameMonth, isSameYear, isAfter } from 'date-fns';
 
 export const calculateBalance = (transactions: Transaction[]): number => {
+  if (transactions.some(txn => txn.type === 'buy' || txn.type === 'sell')) return calculatePortfolio(transactions).balance;
   return transactions.reduce((acc, txn) => {
     if (txn.type === 'withdrawal' || txn.type === 'sell') {
       return acc - txn.amount;
@@ -12,12 +14,14 @@ export const calculateBalance = (transactions: Transaction[]): number => {
 
 export const generateGrowthData = (transactions: Transaction[]) => {
   if (transactions.length === 0) return [];
+  const isPortfolio = transactions.some(txn => txn.type === 'buy' || txn.type === 'sell');
+  const cashFlows = isPortfolio ? calculatePortfolio(transactions).cashFlows : transactions;
 
   const monthlyAggregates: { 
     [key: string]: { contributions: number; withdrawals: number; interest: number } 
   } = {};
 
-  transactions.forEach(txn => {
+  cashFlows.forEach(txn => {
     const monthKey = format(parseISO(txn.date), 'yyyy-MM');
     if (!monthlyAggregates[monthKey]) {
       monthlyAggregates[monthKey] = { contributions: 0, withdrawals: 0, interest: 0 };
@@ -45,10 +49,12 @@ export const generateGrowthData = (transactions: Transaction[]) => {
     const monthKey = format(currentMonth, 'yyyy-MM');
     const monthly = monthlyAggregates[monthKey] || { contributions: 0, withdrawals: 0, interest: 0 };
     
-    cumulativeBalance += monthly.contributions + monthly.interest - monthly.withdrawals;
+    cumulativeBalance = isPortfolio
+      ? calculatePortfolio(transactions.filter(txn => parseISO(txn.date) < addMonths(currentMonth, 1))).balance
+      : cumulativeBalance + monthly.contributions + monthly.interest - monthly.withdrawals;
 
     chartData.push({
-      month: format(currentMonth, 'MMM-yy'),
+      month: format(currentMonth, 'MMM yyyy'),
       balance: cumulativeBalance,
       contributions: monthly.contributions,
       withdrawals: monthly.withdrawals,
@@ -82,7 +88,7 @@ export const calculateProjectionData = (
     const totalInterest = currentBalance - initialBalance - totalContributions;
 
     data.push({
-      month: format(date, 'MMM-yy'),
+      month: format(date, 'MMM yyyy'),
       balance: currentBalance,
       initialBalance: initialBalance,
       totalContributions: totalContributions,
@@ -95,8 +101,8 @@ export const calculateProjectionData = (
   return data;
 };
 
-export const calculateTransactionSummary = (transactions: Transaction[]) => {
-  const now = new Date();
+export const calculateTransactionSummary = (transactions: Transaction[], now = new Date()) => {
+  if (transactions.some(txn => txn.type === 'buy' || txn.type === 'sell')) transactions = calculatePortfolio(transactions).cashFlows;
 
   const summary = {
     month: { contributions: 0, interest: 0, withdrawals: 0 },
@@ -148,6 +154,7 @@ export const calculateTransactionSummary = (transactions: Transaction[]) => {
 
 
 export const generateAssetPerformanceData = (transactions: Transaction[]) => {
+  transactions = normalizeAssetTransactions(transactions);
   if (transactions.length === 0) {
     return { uniqueAssets: [], monthlyData: [] };
   }
@@ -169,10 +176,10 @@ export const generateAssetPerformanceData = (transactions: Transaction[]) => {
   const uniqueAssets = Array.from(uniqueAssetsMap.entries()).map(([assetCode, data]) => ({ assetCode, ...data }));
   uniqueAssets.sort((a, b) => a.assetCode.localeCompare(b.assetCode));
 
-  const monthlyData: { month: string; assets: { [assetCode: string]: { investment: number; dividends: number; shares: number } } }[] = [];
-  const assetState: { [assetCode: string]: { investment: number; dividends: number; shares: number } } = {};
+  const monthlyData: { month: string; assets: { [assetCode: string]: { investment: number; dividends: number; shares: number; realizedGains: number } } }[] = [];
+  const assetState: { [assetCode: string]: { investment: number; dividends: number; shares: number; realizedGains: number } } = {};
   uniqueAssets.forEach(a => {
-    assetState[a.assetCode] = { investment: 0, dividends: 0, shares: 0 };
+    assetState[a.assetCode] = { investment: 0, dividends: 0, shares: 0, realizedGains: 0 };
   });
 
   if (sortedTxns.length === 0) return { uniqueAssets, monthlyData: [] };
@@ -197,7 +204,12 @@ export const generateAssetPerformanceData = (transactions: Transaction[]) => {
             assetState[code].shares += txn.shares || 0;
             break;
           case 'sell':
-            assetState[code].shares -= txn.shares || 0;
+            if (assetState[code].shares > 0 && txn.shares && txn.shares > 0 && txn.shares <= assetState[code].shares + 1e-8) {
+              const costRemoved = assetState[code].investment * Math.min(1, txn.shares / assetState[code].shares);
+              assetState[code].realizedGains += txn.amount - costRemoved;
+              assetState[code].investment = Math.max(0, assetState[code].investment - costRemoved);
+              assetState[code].shares = Math.max(0, assetState[code].shares - txn.shares);
+            }
             break;
           case 'dividend':
           case 'stock-lending':
@@ -210,7 +222,7 @@ export const generateAssetPerformanceData = (transactions: Transaction[]) => {
     }
 
     monthlyData.push({
-      month: format(currentMonth, 'MMM-yy'),
+      month: format(currentMonth, 'MMM yyyy'),
       assets: JSON.parse(JSON.stringify(assetState)) // Deep copy
     });
 
@@ -222,37 +234,16 @@ export const generateAssetPerformanceData = (transactions: Transaction[]) => {
 
 
 export const calculateAssetAllocation = (transactions: Transaction[]) => {
-  const allocation: {
-    investment: Record<AssetCategory, number>;
-    gains: Record<AssetCategory, number>;
-  } = {
-    investment: {
-      'REIT ETF': 0,
-      'REIT': 0,
-      'Stock ETF': 0,
-      'Individual Stock': 0,
-    },
-    gains: {
-      'REIT ETF': 0,
-      'REIT': 0,
-      'Stock ETF': 0,
-      'Individual Stock': 0,
-    },
-  };
-
-  if (!transactions) return allocation;
-
-  transactions.forEach(txn => {
-    const category = txn.assetCategory;
-
-    if (category) {
-      if (txn.type === 'buy') {
-        allocation.investment[category] = (allocation.investment[category] || 0) + txn.amount;
-      } else if (['dividend', 'stock-lending', 'distribution'].includes(txn.type)) {
-        allocation.gains[category] = (allocation.gains[category] || 0) + txn.amount;
-      }
-    }
-  });
-
-  return allocation;
+  const investment = {} as Record<AllocationCategory, number>;
+  const gains = {} as Record<AllocationCategory, number>;
+  for (const category of ['Stock ETF', 'Individual Stock', 'REIT', 'REIT ETF', 'Uncategorized'] as AllocationCategory[]) {
+    investment[category] = 0; gains[category] = 0;
+  }
+  for (const holding of calculatePortfolio(transactions || []).holdings) {
+    investment[holding.category] += holding.cost;
+  }
+  for (const txn of normalizeAssetTransactions(transactions || [])) {
+    if (['dividend', 'stock-lending', 'distribution'].includes(txn.type)) gains[txn.assetCategory || 'Uncategorized'] += txn.amount;
+  }
+  return { investment, gains };
 };

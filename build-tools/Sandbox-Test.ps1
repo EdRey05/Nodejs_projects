@@ -44,7 +44,34 @@ try{
     $frameDirectory="C:\TestExport\frames-$id"
     $recorder=Start-Process powershell.exe -ArgumentList ('-NoProfile -ExecutionPolicy Bypass -File C:\DemoRunner\Capture-Frames.ps1 -Directory '+$frameDirectory) -WindowStyle Hidden -PassThru
     Start-Sleep 2
+    if($id -eq '001_S_I'){
+     # Hold startup discovery pending to verify the welcome page never becomes loading text.
+     Send $script:socket 'Page.enable' @{} | Out-Null
+     $startupScript='window.__startupPending=false;window.__startupGate=new Promise(resolve=>window.__releaseStartup=resolve);const originalFetch=window.fetch.bind(window);window.fetch=(url,options)=>{if(String(url).includes("/api/workbook")&&options?.method==="GET"){window.__startupPending=true;return window.__startupGate.then(()=>originalFetch(url,options))}return originalFetch(url,options)};'
+     $injection=Send $script:socket 'Page.addScriptToEvaluateOnNewDocument' @{source=$startupScript}
+     Send $script:socket 'Page.navigate' @{url=$state.url} | Out-Null
+     $pending=$false
+     for($attempt=0;$attempt -lt 30 -and !$pending;$attempt++){Start-Sleep -Milliseconds 500;$pending=Eval 'window.__startupPending===true'}
+     if(!$pending){throw 'Startup test did not reach hydrated workbook discovery'}
+     $welcome=Eval 'document.querySelector("main").innerText'
+     if($welcome -notmatch 'Welcome to Personal' -or $welcome -match 'Looking for|Opening workbook'){throw 'Welcome page replaced during startup loading'}
+     Eval (Click 'Manage & Import') | Out-Null
+     if((Eval 'document.querySelector("main").innerText') -ne $welcome){throw 'Opening sidebar changed initial page'}
+     Eval 'window.__releaseStartup();true' | Out-Null
+     Start-Sleep 1
+     if((Eval 'document.querySelector("main").innerText') -ne $welcome){throw 'Empty startup changed initial page'}
+     # Exercise the actual Open workbook button with a pending/cancelled picker request.
+     Eval 'window.__beforePickerFetch=window.fetch;window.fetch=(url,options)=>String(url).includes("/api/workbook")&&options?.method==="POST"?new Promise(resolve=>{window.__cancelPicker=()=>resolve(new Response(JSON.stringify({cancelled:true}),{headers:{"Content-Type":"application/json"}}))}):window.__beforePickerFetch(url,options);true' | Out-Null
+     Eval (Click 'Open workbook') | Out-Null
+     Start-Sleep 1
+     if((Eval 'document.querySelector("main").innerText') -ne $welcome){throw 'Pending workbook picker changed initial page'}
+     Eval 'window.__cancelPicker();window.fetch=window.__beforePickerFetch;delete window.__beforePickerFetch;true' | Out-Null
+     Start-Sleep -Milliseconds 300
+     Eval (Click 'Close') | Out-Null
+     Send $script:socket 'Page.removeScriptToEvaluateOnNewDocument'  @{identifier=$injection.identifier} | Out-Null
+    }
     . C:\DemoRunner\Workflows.ps1 -DemoApp $id -Folder $folder
+    if($id -eq '001_S_I'){. C:\TestRunner\Savings-Portfolio-Checks.ps1}
     $png=Send $script:socket 'Page.captureScreenshot' @{format='png'};[IO.File]::WriteAllBytes("C:\TestExport\$id.png",[Convert]::FromBase64String($png.data))
     $record.checks+='synthetic-ui-workflow-output-verified';Start-Sleep 3
    }

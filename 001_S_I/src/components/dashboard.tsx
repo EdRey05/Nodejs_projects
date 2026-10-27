@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useAccounts } from '@/contexts/accounts-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AccountManager } from './account-manager';
@@ -11,15 +11,11 @@ import { InvestmentDashboard } from './investment-dashboard';
 
 export function Dashboard() {
   const { accounts, transactions } = useAccounts();
-  const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(accounts[0]?.id);
-
-  useEffect(() => {
-    if (accounts.length > 0 && !accounts.find(acc => acc.id === selectedAccountId)) {
-      setSelectedAccountId(accounts[0].id);
-    } else if (accounts.length === 0) {
-        setSelectedAccountId(undefined);
-    }
-  }, [accounts, selectedAccountId]);
+  const [requestedAccountId, setSelectedAccountId] = useState<string | undefined>();
+  // Resolve a valid account in the same render as a workbook arrives, avoiding
+  // an empty dashboard frame while waiting for a selection effect.
+  const selectedAccountId = accounts.some(account => account.id === requestedAccountId)
+    ? requestedAccountId : accounts[0]?.id;
   
   const handleAccountChange = (accountId: string) => {
     setSelectedAccountId(accountId);
