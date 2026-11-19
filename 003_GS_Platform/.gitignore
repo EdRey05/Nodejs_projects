@@ -38,6 +38,7 @@ next-env.d.ts
 
 # local database files (the app creates these at runtime)
 data/*.duckdb
+!/data/synthetic_customers_seed.duckdb
 data/*.duckdb.wal
 data/obsolete/
 
@@ -45,3 +46,6 @@ data/obsolete/
 docs/
 
 .env*
+
+# Local development runtimes, launcher state and logs
+/.local-runtime/

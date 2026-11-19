@@ -2,7 +2,11 @@
 
 A local lab data application for viewing daily gene-synthesis logs, building Excel layouts, and connecting jobs to their experimental history. The interactive interface uses Next.js/React; Python handles file processing and DuckDB storage.
 
-## Current scope — v0.0.8
+## Development data
+
+Use only synthetic data for the redevelopment on `dev-GSP`, including database records, imports, test fixtures, and demos. Build the new development databases from scratch and populate them with fictional records. Keep real lab records and production database exports out of the development workflow.
+
+## Current scope — v0.0.9
 
 - **Job Log:** the app's first table and the spine for job relationships — searchable, sortable and filterable master job data.
 - **Job stages:** a canonical thirteen-stage pipeline vocabulary, shared by the Python bridge and the frontend.
@@ -14,7 +18,7 @@ A local lab data application for viewing daily gene-synthesis logs, building Exc
 - **Sample lookup:** a cross-stage search timeline. Some stages still match entry names rather than resolving the full sample lineage.
 - **Dashboard and developer tools:** database counts, SQL inspection, exports, and a widget playground.
 
-The Pipelines section remains a placeholder. There is no longer a separate Nanodrop page; Nanodrop parsing remains in the backend. Features are under active development and are not all covered by automated tests.
+There is no longer a separate Nanodrop page; Nanodrop parsing remains in the backend. Features are under active development and are not all covered by automated tests.
 
 ## Job stages
 
@@ -127,15 +131,43 @@ _electron_sidecar/   Electron launcher and packaging scripts
 docs/                Historical plans (some descriptions are outdated)
 ```
 
-## Local setup
+## Live development on Windows
 
-Install Node.js 20+ and Python 3.10+ with pip. Run commands from the repository root. On Windows, the bridge invokes `python`, so the selected environment must put that executable on PATH.
+Use **Start Development** in the Desktop's **Gene Synthesis Development** folder,
+or double-click `Start-Development.cmd` in this app folder. It opens the actual
+repository source in your browser, normally at `http://127.0.0.1:9002/home`.
+If that port is occupied it chooses another available development port.
+
+Keep that browser tab open while editing this checkout. Saved interface changes
+usually appear automatically; refresh if needed. Python scripts run from the
+checkout on each backend operation. Restart development after changing server
+configuration, environment settings or dependencies. There is no copying into
+an extracted release and no portable rebuild between edits.
+
+Use **Stop Development** or `Stop-Development.cmd` when finished. Closing the
+browser tab does not stop the background server. Starting again reuses an
+already running development session rather than opening a second server.
+
+The one-time local setup reuses the portable ZIP's Node/Python runtimes in
+`.local-runtime/` and installs the complete JavaScript development libraries in
+`node_modules/`. Both folders, `.next/`, local environment files and generated
+databases are ignored by Git. Launcher state and logs are under
+`.local-runtime/`; the application still uses this checkout's `data/` folder.
+The launcher supplies `GSA_PYTHON` automatically, so no Python activation is needed.
+
+The launchers are small source files; bundled runtimes and dependencies do not
+belong in commits. They must be prepared again on a new machine or checkout.
+The standardized portable build remains the release workflow.
+
+## Manual local setup
+
+Install Node.js 22–24 and Python 3.10+ with pip. Run commands from `003_GS_Platform`. On Windows, the bridge uses `GSA_PYTHON` if supplied, otherwise `python` on PATH.
 
 ```powershell
 npm ci
 py -3 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install duckdb pandas openpyxl pyyaml pillow
+python -m pip install -r requirements.txt
 ```
 
 Pillow supports embedded workbook images. On macOS/Linux, create the environment with `python3 -m venv .venv` and activate it with `source .venv/bin/activate`.

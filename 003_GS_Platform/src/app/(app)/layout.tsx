@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AppIcon } from '@/components/icons';
-import { FlaskConical, User, Settings, Home, GitFork, Wrench, Code, FileText, ChevronsUpDown, UploadCloud, Hash, ClipboardList, Dna, PackageCheck, Plus } from 'lucide-react';
+import { FlaskConical, User, Settings, Home, Wrench, Code, FileText, ChevronsUpDown, UploadCloud, Hash, ClipboardList, Dna, PackageCheck, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -163,31 +163,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             
-            <Collapsible asChild>
-              <SidebarMenuItem>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton>
-                    <GitFork />
-                    <span>Pipelines</span>
-                    <ChevronsUpDown className="ml-auto h-4 w-4" />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === '/pipelines/pipeline-1'}><Link href="/pipelines/pipeline-1">Pipeline 1</Link></SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === '/pipelines/pipeline-2'}><Link href="/pipelines/pipeline-2">Pipeline 2</Link></SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === '/pipelines/pipeline-3'}><Link href="/pipelines/pipeline-3">Pipeline 3</Link></SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </SidebarMenuItem>
-            </Collapsible>
-
             <Collapsible asChild>
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
