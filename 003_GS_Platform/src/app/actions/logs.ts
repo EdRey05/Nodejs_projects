@@ -119,21 +119,6 @@ export async function fetchPersistedData(logType: LogType): Promise<FetchResult>
     }
 }
 
-export async function fetchJobLog(): Promise<{ success: boolean; data?: any[]; message?: string }> {
-    try {
-        const result = await runBridge({ action: 'fetch_job_log' }) as any;
-        if (!result.success) {
-            return { success: false, message: result.message || 'Fetch failed.' };
-        }
-        const bridgeResult = result.data;
-        if (!bridgeResult.success) {
-            return { success: false, message: bridgeResult.message };
-        }
-        return { success: true, data: bridgeResult.data };
-    } catch (e: any) {
-        return { success: false, message: e.message };
-    }
-}
 
 export async function fetchSeqPrep(): Promise<{ success: boolean; payload?: Record<string, any[]>; message?: string }> {
     try {

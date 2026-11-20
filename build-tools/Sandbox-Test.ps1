@@ -33,7 +33,7 @@ try{
     Push-Location "$folder\app"
     & "$folder\runtime\node.exe" C:\TestRunner\Smoke-Python.cjs "$folder\python\python.exe" C:\TestExport
     if($LASTEXITCODE){throw 'Bundled Python bridge/schema smoke failed; inspect exported stdout/stderr'}
-    Pop-Location;$record.checks+='bundled-python-imports','packaged-bridge-stages','empty-schema-initialization'
+    Pop-Location;$record.checks+='bundled-python-imports','packaged-bridge-initialization','empty-schema-initialization'
    }else{
     $browser=Start-Process $edge -ArgumentList @('--headless=new','--disable-gpu','--no-first-run','--remote-debugging-port=9222',"--user-data-dir=C:\Browser-$id",$state.url) -WindowStyle Hidden -PassThru
     $target=$null;for($n=0;$n -lt 45 -and !$target;$n++){Start-Sleep 1;try{$targets=Invoke-RestMethod http://127.0.0.1:9222/json/list;$target=$targets | Where-Object {$_.type -eq 'page' -and $_.url -eq $state.url} | Select-Object -First 1}catch{}}

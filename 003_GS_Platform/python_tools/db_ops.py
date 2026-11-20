@@ -4,17 +4,10 @@ import sys
 import json
 import os
 
-# --- Database locations -------------------------------------------------
-# The app is being rebuilt around a fresh, synthetic-data-only database.
-# The legacy production database is never deleted: on first use it is
-# renamed into data/obsolete/ and the new schema is created from scratch.
+# One fictional database shared by every retained application page.
 DATA_DIR = 'data'
-DB_FILENAME = 'GeneSyn_db_v2.duckdb'
-LEGACY_DB_FILENAME = 'GeneSyn_db.duckdb'
-OBSOLETE_DIR = os.path.join(DATA_DIR, 'obsolete')
-
+DB_FILENAME = 'GSP_database.duckdb'
 DB_PATH = os.path.join(DATA_DIR, DB_FILENAME)
-LEGACY_DB_PATH = os.path.join(DATA_DIR, LEGACY_DB_FILENAME)
 SCHEMA_PATH = os.path.join('python_tools', 'schema.yaml')
 
 _bootstrap_done = False
@@ -53,37 +46,14 @@ def schema_columns(log_type, table_name):
 
 
 # --- Bootstrap ----------------------------------------------------------
-def _unique_obsolete_path(legacy_path):
-    """Pick a free path inside the obsolete folder (never overwrite)."""
-    base = os.path.basename(legacy_path)
-    stem, ext = os.path.splitext(base)
-    candidate = os.path.join(OBSOLETE_DIR, base)
-    n = 2
-    while os.path.exists(candidate):
-        candidate = os.path.join(OBSOLETE_DIR, f"{stem} ({n}){ext}")
-        n += 1
-    return candidate
-
-
 def _bootstrap_db():
-    """Rename the legacy database to obsolete and create the new empty one.
-
-    Idempotent: the rename happens only once, and only when the new
-    database does not exist yet. The legacy file is moved, never deleted.
-    """
+    """Initialize missing draft tables in the single shared database."""
     global _bootstrap_done
     if _bootstrap_done:
         return
     _bootstrap_done = True
-
     os.makedirs(DATA_DIR, exist_ok=True)
-
     if not os.path.exists(DB_PATH):
-        if os.path.exists(LEGACY_DB_PATH):
-            os.makedirs(OBSOLETE_DIR, exist_ok=True)
-            target = _unique_obsolete_path(LEGACY_DB_PATH)
-            os.replace(LEGACY_DB_PATH, target)
-            print(f"Legacy database moved to obsolete: {target}", file=sys.stderr)
         init_db()
 
 

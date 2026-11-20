@@ -1,13 +1,8 @@
-# Gene Synthesis Platform — canonical schema.
-#
-# Each top-level key is a "log type" group. Unless a `table:` override is
-# present, the physical table name is "{log_type}_{table_name}" (see
-# db_ops.resolve_table_name). The `job_log` group overrides it to the
-# physical table `job_log` — the app's first table and the job spine.
-#
-# Column order here IS the table's column order (and the Job Log display
-# order in the UI). Display labels live in the frontend; these names are
-# the snake_case variable/column names used in SQL, Python and TypeScript.
+# Retained Layouts/Logs draft-table definitions for GSP_database.duckdb.
+# The current database schema snapshot (including redesigned tables) is data/SCHEMA.sql.
+# Table-specific conventions are documented under docs/.
+# Groups map to {log_type}_{table_name}, except explicit `table:` overrides.
+# The draft job_log is retained for layouts; it is not progress_tracker.
 
 job_log:
   table: job_log

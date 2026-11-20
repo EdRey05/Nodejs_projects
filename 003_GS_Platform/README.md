@@ -6,87 +6,22 @@ A local lab data application for viewing daily gene-synthesis logs, building Exc
 
 Use only synthetic data for the redevelopment on `dev-GSP`, including database records, imports, test fixtures, and demos. Build the new development databases from scratch and populate them with fictional records. Keep real lab records and production database exports out of the development workflow.
 
-## Current scope — v0.0.9
+## Current development scope
 
-- **Job Log:** the app's first table and the spine for job relationships — searchable, sortable and filterable master job data.
-- **Job stages:** a canonical thirteen-stage pipeline vocabulary, shared by the Python bridge and the frontend.
-- **New Job:** create a job from the app, with the stage picker and the pipeline's turnaround estimates.
-- **Log review and upload:** Ligation, Colony PCR, DNA Extraction, and DNA Quantification, with tables, plate views, images, and carousel navigation.
-- **Sequencing:** preparation and analysis views with Python importers.
-- **Layout creation:** Ligation, Colony PCR, and extraction workbook generators, plus an interactive plate designer.
-- **Job data:** IDT/PCR fragments, primer add-ons and cross-references, reference-file previews, shipment/QC details, and clone/plasmid lineage data.
-- **Sample lookup:** a cross-stage search timeline. Some stages still match entry names rather than resolving the full sample lineage.
-- **Dashboard and developer tools:** database counts, SQL inspection, exports, and a widget playground.
+The redevelopment uses a fictional system inspired by familiar workflows, designed for consistent data and reliable relationships before implementing further operations. It does not reproduce the inconsistencies or responsibilities of a live workplace system.
 
-There is no longer a separate Nanodrop page; Nanodrop parsing remains in the backend. Features are under active development and are not all covered by automated tests.
+- **Customers & Orders:** searchable, sortable tables backed by the synthetic Customer Info and Orders tables, including order status filters.
+- **Progress Tracker:** synthetic per-item records, generated Work Numbers, statuses, metadata, and notes.
+- **Home:** an empty page reserved for later design.
+- **Retained drafts:** log review/upload, sequencing views, layout generators, and developer tools. These older drafts still need review and adaptation to the new synthetic schema before being treated as complete workflows.
 
-## Job stages
+New Job, Sample Lookup, IDT Fragments, Reference Files, and Shipping & QC were removed along with their dedicated UI/actions and obsolete legacy import/write helpers. Their previous routes are no longer available.
 
-The pipeline runs through thirteen stages, from `0. Onboarding` to
-`12. Completed - Preparing for Shipment`. The vocabulary is defined once in
-`python_tools/stages.json` and mirrored in `src/lib/stages.ts`; the bridge
-validates every write against it. `python_tools/check_stages.py` compares the two
-lists and fails if they drift.
+## Synthetic data model and statuses
 
-```bash
-python python_tools/check_stages.py
-```
+The tracked fictional database is `data/GSP_database.duckdb`. See [database conventions](docs/database_conventions.md) for table definitions, source pools, generation weights, identifier rules, and reproducible scripts. Customer Info and Orders are related to Progress Tracker; Oligo Log and Primer Log are initially empty; Vector Log holds reference metadata.
 
-Cancelled, moved-to-Sg, and shipped are lifecycle states outside the pipeline.
-They are filtered as categories on the Job Log page, not selected as stages.
-
-## Creating a job
-
-The **New Job** page writes the Job Log columns up to `prep` — Work No., BBI ID,
-Order Date, SO, Gene Name, Vector, Cloning Site, Resistance, Length (bp),
-Quantity, Prep, and the starting stage. Insert Sequence and every column after
-it are left empty: the pipeline fills those as the job advances.
-
-| Layer | File |
-|---|---|
-| Form | `src/app/(app)/job-log/new/page.tsx` |
-| Field list | `src/lib/job-log-fields.ts` |
-| Server actions | `src/app/actions/job-log.ts` |
-| Write path | `python_tools/job_log.py` |
-| Bridge actions | `create_job_log_row`, `fetch_stages` |
-
-The write path validates the Work No. (required, must be new), the stage (must be
-canonical), Length (bp) (a whole number), and Order Date (`YYYY-MM-DD`), and
-commits the insert in one transaction.
-
-## Data model
-
-The Job Log is the app's first table. It is defined in `python_tools/schema.yaml`
-under the `job_log` group and maps to the physical DuckDB table `job_log`:
-
-| Column | Type | Notes |
-|---|---|---|
-| `work_no` | TEXT | Primary job identifier |
-| `bbi_id` | TEXT | Internal BBI identifier |
-| `order_date` | TEXT | ISO date |
-| `so` | TEXT | Sales order |
-| `gene_name` | TEXT | |
-| `vector` | TEXT | |
-| `cloning_site` | TEXT | |
-| `resistance` | TEXT | Antibiotic marker |
-| `length_bp` | INTEGER | Insert length in bp |
-| `quantity` | TEXT | Plasmid quantity |
-| `prep` | TEXT | Preparation form |
-| `stage` | TEXT | Pipeline stage |
-| `insert_sequence` | TEXT | |
-| `final_vector_sequence` | TEXT | |
-| `plasmid_no` | TEXT | |
-| `tube_id` | TEXT | |
-| `host` | TEXT | |
-| `temperature` | TEXT | Growth temperature |
-| `competent_cells` | TEXT | |
-| `notes` | TEXT | |
-
-`job_log` is the job spine; `job_log_rows` is a view over it. Schema objects are defined both in `python_tools/schema.yaml` and specialized import modules.
-
-The database file is `data/GeneSyn_db_v2.duckdb`. The previous production database
-(`data/GeneSyn_db.duckdb`) is never deleted — on first use it is renamed into
-`data/obsolete/` and the new database is created empty from the schema.
+New tracker rows default to `0. Onboarding`. Cancellation is `X. Cancelled`; stages 1–13 describe the subsequent progress steps. The conventions document is the current vocabulary reference. The deleted New Job draft's old stage list and turnaround assumptions are no longer used.
 
 ## Architecture
 
@@ -106,29 +41,22 @@ DuckDB + local files / downloadable Excel workbooks
 | UI | Tailwind CSS, Radix/shadcn components, Embla Carousel |
 | Processing | Python, openpyxl, pandas |
 | Storage | DuckDB, local images and reference files |
-| Optional desktop shell | Electron in `_electron_sidecar/` |
 
 ## Project map
 
 ```text
 src/app/(app)/        Pages, shared navigation, database context
-  job-log/            The Job Log table: filters, sorting, column visibility
-  logs/              Experimental and sequencing log views, uploader
-  layouts/           Ligation, Colony PCR, extraction generators
-  plate-designer/    Interactive plate editor
-  fragments/         Fragment browser
-  reference-files/   Reference metadata and previews
-  shipping-qc/       Job, shipment, and QC views
-  search/            Sample lookup timeline
+  customers-orders/  Customer Info and Orders tabs
+  job-log/           Progress Tracker
+  logs/              Retained experimental and sequencing drafts
+  layouts/           Retained layout generator drafts
   developer/         Database tools and component playground
-src/app/actions/     Logs, database, layouts, job web, lookup, dashboard,
-                     and Python subprocess wrapper
-python_tools/        Bridge, parsers, imports, layout generation, schema
-python_tools/templates/  Excel output templates
-data/                GeneSyn_db_v2.duckdb and supporting files/images
-0-Logs/              Source laboratory files
-_electron_sidecar/   Electron launcher and packaging scripts
-docs/                Historical plans (some descriptions are outdated)
+src/app/actions/     Shared log, database, layout, and subprocess actions
+scripts/             Synthetic seed generators, rules, pools and readers
+python_tools/        Shared bridge, parsers, imports, layouts and legacy schema
+docs/                Per-table conventions and generation rules
+data/SCHEMA.sql      Exact DuckDB schema snapshot
+data/                Tracked fictional seed; ignored local runtime databases
 ```
 
 ## Live development on Windows
@@ -192,30 +120,33 @@ npm start
 
 ### Data and another computer
 
-Keep a backup of `data/GeneSyn_db_v2.duckdb` before imports or migrations. To reproduce the current populated application on another computer, bring the required database, images, templates, and source/reference files in addition to the code. Some import defaults and stored file paths refer to the original machine; adjust them before relying on imports or previews.
-
-The generic schema initializer does not populate historical data or establish every specialized job-web object. Do not treat a fresh empty database as equivalent to the populated development database.
-
-## Optional Electron launcher
-
-The desktop shell uses a Next.js standalone build and bundled Node/Python runtimes. It locates a checkout using `GSA_REPO_ROOT` or nearby folders, then normally serves on `127.0.0.1:4177`. The executable still requires the checkout, build, and data; it is not a self-contained data package.
-
-See [`_electron_sidecar/BUILD.md`](_electron_sidecar/BUILD.md) for packaging background. That document contains older version/AI references and should be checked against the current scripts. Electron is not required to run the application in a browser.
+Use the tracked fictional seed and documented generation rules for redevelopment. Do not copy real lab records, historical exports, or real reference files into the development workflow. All retained pages share `data/GSP_database.duckdb`. Layouts and Logs still use their retained draft tables inside that same file; linking them to the new relational model is future work.
 
 ## Development status
 
-- Supported portable-folder version is `0.0.8`; the historical Electron sidecar remains `0.0.5` and is not the supported release recipe.
+- Source version is `0.0.10`; a portable rebuild has not been made for this version.
 - Run `npm run typecheck` separately; production builds now enforce TypeScript checks. No separate ESLint configuration is supplied.
-- The October 5, 2026 baseline check found stale generated `.next` route types and calendar component typing errors. A clean build may refresh route types; the calendar issue needs a source fix.
-- Layout job-eligibility filtering and full relational sample lookup need follow-up verification.
-- Existing planning documents include completed ideas still marked pending; consult the current code before selecting work.
+- Retained layout and log drafts need verification and adaptation to the synthetic model.
 
 Development proceeds in small workflow-focused increments. Validate generated workbooks and database relationships with representative test data before depending on a changed workflow.
 
-## Standardized portable build (0.0.8)
+## Standardized portable build
 
-Use the repository build-tools/Build-Apps.ps1 registry workflow. The portable folder bundles Next standalone output, Node, complete Python, parsers/schema/templates and an initially empty writable app/data folder. Start.cmd opens the local browser; Stop.cmd stops the service. No checkout, host Python/Node, API key or WSL is required. The server invokes GSA_PYTHON set by the launcher. Developer mode can still use PATH Python. Optional import defaults use GSA_IMPORT_ROOT and GSA_PRIMER_LOG; no original-machine folder is required.
+Use the repository build-tools/Build-Apps.ps1 registry workflow. The portable folder bundles Next standalone output, Node, complete Python, parsers and schema and a writable app/data folder containing only the tracked fictional seed initially. Start.cmd opens the local browser; Stop.cmd stops the service. No checkout, host Python/Node, API key or WSL is required. The server invokes GSA_PYTHON set by the launcher. Developer mode can still use PATH Python. Optional import defaults use GSA_IMPORT_ROOT and GSA_PRIMER_LOG; no original-machine folder is required.
 
-The legacy _electron_sidecar is historical, outside the supported portable build path. Its old build instructions do not describe this release. This version standardizes packaging only; incomplete domain workflows and placeholder pages remain. There is no public demo or recording for 003 yet. Keep production files out of portable builds; back up data before replacing versions. No live or legacy user database was used to validate this packaging.
+The retained Layouts and Logs drafts are still incomplete and await adaptation to the new model. There is no public demo or recording for 003 yet. Keep production files out of portable builds; back up data before replacing versions. No live or legacy user database was used to validate this packaging.
 
 Portable runtime note: DuckDB needs MSVCP140.dll. The build stages an app-local copy from the pinned NumPy wheel beside the bundled Python interpreter, preserving its original file/notices and recording its hash. End users do not install a C++ runtime separately.
+
+
+## Database documentation
+
+- [Database conventions index](docs/database_conventions.md): one Markdown per table, plus the compatibility view.
+- [Synthetic generation and refresh](docs/synthetic_data_generation.md): reproducibility, weighting, chronological dates, and refresh boundaries.
+- [Exact database schema](data/SCHEMA.sql): generated DDL for the single `GSP_database.duckdb` file. Regenerate it using `python scripts/export_database_schema.py` after schema changes.
+
+The former data-folder README and cleanup audit were removed. `docs/` is tracked by Git.
+
+## Removed workbook templates
+
+The two Excel templates and `python_tools/templates/` were deleted at the user's request. Layout pages and their code remain for later redesign; template-dependent workbook generation needs replacement templates or programmatic workbook creation before it works again.

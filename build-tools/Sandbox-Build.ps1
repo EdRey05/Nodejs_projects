@@ -54,6 +54,7 @@ try{
    if($profile.python){
     Copy-Item "$app\python_tools","$app\scripts" "$folder\app" -Recurse
     New-Item -ItemType Directory "$folder\app\data" -Force | Out-Null
+    Copy-Item "$app\data\GSP_database.duckdb" "$folder\app\data\GSP_database.duckdb"
     $spec=Get-Content C:\Runner\python-runtime.json -Raw | ConvertFrom-Json
     Invoke-WebRequest $spec.url -OutFile C:\Build\python.tar.gz -UseBasicParsing
     if((Get-FileHash C:\Build\python.tar.gz).Hash -ne $spec.sha256){throw 'Python checksum mismatch'}
@@ -70,7 +71,7 @@ try{
     Copy-Item $msvc[0].FullName "$folder\python\msvcp140.dll"
     @{source=$msvc[0].Name;destination='python/msvcp140.dll';sha256=(Get-FileHash "$folder\python\msvcp140.dll").Hash;provenance='Bundled in the pinned NumPy Windows wheel; original and notices retained'} | ConvertTo-Json | Set-Content "C:\Export\$id-msvc-runtime.json"
     Run "$folder\python\python.exe" @('-I','-c',"import duckdb,pandas,numpy,openpyxl,yaml,PIL; print('Packaged native imports passed')")
-    Run "$folder\python\python.exe" @("$app\python_tools\check_stages.py")
+    Run "$folder\python\python.exe" @('-m','compileall','-q',"$app\python_tools")
     & "$folder\python\python.exe" -m pip freeze | Set-Content "C:\Export\$id-python-resolved.txt"
     Copy-Item C:\Runner\python-runtime.json C:\Export
    }

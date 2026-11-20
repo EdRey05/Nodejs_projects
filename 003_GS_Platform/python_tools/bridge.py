@@ -260,16 +260,6 @@ def action_fetch_extraction_wells(data: dict) -> dict:
     return {"success": True, "wells": wells}
 
 
-def action_fetch_job_log(_data: dict) -> dict:
-    """Fetch all job log rows from DuckDB."""
-    if not os.path.exists(db_ops.DB_PATH):
-        return {"success": False, "message": "Database not initialized."}
-
-    data = db_ops.query_data('job_log', 'data')
-    if not data:
-        return {"success": False, "message": "No job log data found."}
-
-    return {"success": True, "data": data}
 
 
 def action_db_init(_data: dict) -> dict:
@@ -292,11 +282,6 @@ def action_db_run_query(data: dict) -> dict:
     return db_ops.run_query(data.get('sql', ''))
 
 
-def action_db_clear(data: dict) -> dict:
-    """Clear all data for a log type."""
-    log_type = _log_type_key(data['log_type'])
-    db_ops.clear_log_type_data(log_type)
-    return {"status": "success"}
 
 
 def action_bulk_import(data: dict) -> dict:
@@ -305,70 +290,26 @@ def action_bulk_import(data: dict) -> dict:
     return _bulk_import(data)
 
 
-def action_import_job_log(data: dict) -> dict:
-    """Header-verified, work_no-based upsert of a Job Log sheet."""
-    from bulk_import import import_job_log as _import_jl
-    return _import_jl(data)
 
 
-def action_create_job_log_row(data: dict) -> dict:
-    """Create one Job Log row from the app's New Job form."""
-    from job_log import create_job_log_row as _create
-    return _create(data)
 
 
-def action_fetch_stages(data: dict) -> dict:
-    """Canonical stage vocabulary (shared with the frontend)."""
-    from job_log import load_stages
-    return {"success": True, "stages": load_stages()}
 
 
-def action_import_idt(data: dict) -> dict:
-    """Summary IDT Log v2 -> idt_fragments + pcr_fragments (P8 job web)."""
-    from job_web_import import import_idt as _imp
-    return _imp(data)
 
 
-def action_import_primer_addon(data: dict) -> dict:
-    """Primer Log input addon sheets -> primer_input_addon (P8 job web)."""
-    from job_web_import import import_primer_addon as _imp
-    return _imp(data)
 
 
-def action_import_reference_files(data: dict) -> dict:
-    """07 reference pMON*.txt walk -> reference_files (P8 job web)."""
-    from job_web_import import import_reference_files as _imp
-    return _imp(data)
 
 
-def action_import_file_inventory(data: dict) -> dict:
-    """05/08/09/13/14/15 walks -> file_inventory (P8 job web)."""
-    from job_web_import import import_file_inventory as _imp
-    return _imp(data)
 
 
-def action_import_shipment_qc(data: dict) -> dict:
-    """12 Shipment and QC Log -> shipment_rows + qc_rows (P8 job web)."""
-    from job_web_import import import_shipment_qc as _imp
-    return _imp(data)
 
 
-def action_read_reference_file(data: dict) -> dict:
-    """Capped 2 kB preview of a reference pMON*.txt (P8 /reference-files UI)."""
-    from job_web_import import read_reference_file as _imp
-    return _imp(data)
 
 
-def action_import_primer_xref(data: dict) -> dict:
-    """Primer *N slot -> sequence bridge (primer_xref + primer_sequences)."""
-    from job_web_import import import_primer_xref as _imp
-    return _imp(data)
 
 
-def action_ensure_job_web(data: dict) -> dict:
-    """Create canonical P8 tables (raw DDL) + job_log_rows view."""
-    from job_web_import import ensure_job_web_objects as _ensure
-    return {'status': 'success', 'created': _ensure()}
 
 
 def action_import_master_summary(data: dict) -> dict:
@@ -390,7 +331,7 @@ def action_lookup_vector(data: dict) -> dict:
 
 
 def action_list_templates(data: dict) -> dict:
-    """List shipped layout templates in python_tools/templates/."""
+    """List optional layout templates; none are currently shipped."""
     from foundations import list_templates as _fn
     return _fn(data or {})
 
@@ -444,11 +385,7 @@ ACTIONS = {
     'parse_and_persist': action_parse_and_persist,
     'fetch': action_fetch,
     'fetch_extraction_wells': action_fetch_extraction_wells,
-    'fetch_job_log': action_fetch_job_log,
     'bulk_import': action_bulk_import,
-    'import_job_log': action_import_job_log,
-    'create_job_log_row': action_create_job_log_row,
-    'fetch_stages': action_fetch_stages,
     'import_master_summary': action_import_master_summary,
     'import_vector_db': action_import_vector_db,
     'lookup_vector': action_lookup_vector,
@@ -460,18 +397,9 @@ ACTIONS = {
     'build_extraction_layout': action_build_extraction_layout,
     'bulk_import_sequencing_prep': action_bulk_import_sequencing_prep,
     'bulk_import_seq_logs': action_bulk_import_seq_logs,
-    'import_idt': action_import_idt,
-    'import_primer_addon': action_import_primer_addon,
-    'import_reference_files': action_import_reference_files,
-    'import_file_inventory': action_import_file_inventory,
-    'import_shipment_qc': action_import_shipment_qc,
-    'read_reference_file': action_read_reference_file,
-    'import_primer_xref': action_import_primer_xref,
-    'ensure_job_web': action_ensure_job_web,
     'db_init': action_db_init,
     'db_export': action_db_export,
     'db_run_query': action_db_run_query,
-    'db_clear': action_db_clear,
 }
 
 

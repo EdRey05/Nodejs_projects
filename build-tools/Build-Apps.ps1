@@ -10,7 +10,7 @@ $run=Join-Path $Output ('runs\'+(Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
 $inputs=Join-Path $run 'inputs';$export=Join-Path $run 'output'
 New-Item -ItemType Directory -Force $inputs,$export | Out-Null
 Copy-Item "$PSScriptRoot\*" $inputs -Recurse
-$files=@(& git -C $repo ls-files --cached --others --exclude-standard) | Where-Object {$_ -notmatch '(^|/)(\.env[^/]*|config\.json|node_modules|\.next|dist|release|data)(/|$)' -and $_ -notmatch '^003_GS_Platform/_electron_sidecar/' }
+$files=@(& git -C $repo ls-files --cached --others --exclude-standard) | Where-Object {$_ -eq '003_GS_Platform/data/GSP_database.duckdb' -or ($_ -notmatch '(^|/)(\.env[^/]*|config\.json|node_modules|\.next|dist|release|data)(/|$)') }
 # Staging is a snapshot: sandbox never sees ignored/private files or the live checkout.
 $source=Join-Path $inputs 'source';New-Item -ItemType Directory -Force $source | Out-Null
 $manifest=@(foreach($file in $files){$src=Join-Path $repo $file;if(Test-Path -LiteralPath $src -PathType Leaf){$dst=Join-Path $source $file;New-Item -ItemType Directory -Force (Split-Path $dst) | Out-Null;Copy-Item -LiteralPath $src -Destination $dst;@{path=$file;sha256=(Get-FileHash $dst).Hash}}})

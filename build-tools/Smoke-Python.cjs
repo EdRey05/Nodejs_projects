@@ -11,8 +11,8 @@ function run(name,args,input){
 }
 try{
  run('003-python-imports.txt',['-I','-c',"import duckdb,pandas,openpyxl,yaml,PIL; print('Native runtime imports passed')"]);
- const stages=JSON.parse(run('003-stages.json',['python_tools/bridge.py'],JSON.stringify({action:'fetch_stages'})));
- if(!stages.success||stages.stages.length!==13)throw Error('Expected thirteen canonical stages');
+ const initialized=JSON.parse(run('003-bridge-init.json',['python_tools/bridge.py'],JSON.stringify({action:'db_init'})));
+ if(initialized.status!=='success')throw Error('Bridge schema initialization failed');
  run('003-empty-schema.txt',['-c',"import sys; sys.path.insert(0,'python_tools'); import db_ops; db_ops.init_db(); c=db_ops.get_connection(); print(c.execute('SHOW TABLES').fetchall()); c.close()"]);
  console.log('Bundled Python, UTF-8 bridge and empty schema passed');
 }catch(error){console.error(error);process.exitCode=1;}

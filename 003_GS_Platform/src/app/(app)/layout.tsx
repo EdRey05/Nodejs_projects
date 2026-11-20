@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AppIcon } from '@/components/icons';
-import { FlaskConical, User, Settings, Home, Wrench, Code, FileText, ChevronsUpDown, UploadCloud, Hash, ClipboardList, Dna, PackageCheck, Plus } from 'lucide-react';
+import { User, Settings, Home, Wrench, Code, FileText, ChevronsUpDown, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { DatabaseContextProvider, useDatabase } from './_context/DatabaseContext';
 import { LOG_TYPES, LogType } from '@/lib/types';
-import { fetchPersistedData, fetchJobLog, fetchSeqPrep, fetchSequencingLogs } from '@/app/actions';
+import { fetchPersistedData, fetchSeqPrep, fetchSequencingLogs } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
@@ -49,7 +49,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         'colony-pcr': 'Colony PCR Log',
         'dna-extraction': 'DNA Extraction Log',
         'dna-quantification': 'DNA Quantification Log',
-        'job-log': 'Job Log',
+        'job-log': 'Progress Tracker',
+        'customers-orders': 'Customers & Orders',
         'sequencing-prep': 'Sequencing Prep',
         'sequencing-analysis': 'Sequencing Analysis',
       };
@@ -58,7 +59,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         return specialTitles[segment];
       }
       
-      if (segment === 'home') return 'Home';
   
       return segment.replace(/-/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.substring(1)).join(' ');
     };
@@ -84,17 +84,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             toast({ variant: 'destructive', title: 'Initial Load Failed', description: `Could not load ${logType}: ${result.message}` });
           }
         }),
-        // Load Job Log data
-        (async () => {
-          const result = await fetchJobLog();
-          if (result.success && result.data) {
-            setDatabase('Job Log', {
-              buffer: null,
-              name: 'DuckDB: Job Log',
-              payload: { data: result.data },
-            });
-          }
-        })(),
         // Sequencing prep (06-Sequencing prep trio)
         (async () => {
           const result = await fetchSeqPrep();
@@ -140,67 +129,25 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === '/home'} tooltip="Home">
-                <Link href="/home">
-                  <Home />
-                  <span>Home</span>
+                <Link href="/home"><Home /><span>Home</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/customers-orders'} tooltip="Customers & Orders">
+                <Link href="/customers-orders">
+                  <User />
+                  <span>Customers &amp; Orders</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === '/job-log'} tooltip="Job Log">
+              <SidebarMenuButton asChild isActive={pathname === '/job-log'} tooltip="Progress Tracker">
                 <Link href="/job-log">
                   <FileText />
-                  <span>Job Log</span>
+                  <span>Progress Tracker</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === '/job-log/new'} tooltip="New Job">
-                <Link href="/job-log/new">
-                  <Plus />
-                  <span>New Job</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            
-            <Collapsible asChild>
-              <SidebarMenuItem>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton asChild isActive={pathname === '/search'}>
-                    <Link href="/search" className="flex w-full items-center">
-                      <Hash />
-                      <span>Sample Lookup</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-              </SidebarMenuItem>
-            </Collapsible>
-
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === '/fragments'}>
-                <Link href="/fragments" className="flex w-full items-center">
-                  <Dna />
-                  <span>IDT Fragments</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === '/reference-files'}>
-                <Link href="/reference-files" className="flex w-full items-center">
-                  <FileText />
-                  <span>Reference Files</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === '/shipping-qc'}>
-                <Link href="/shipping-qc" className="flex w-full items-center">
-                  <PackageCheck />
-                  <span>Shipping &amp; QC</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-
             <Collapsible asChild>
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>

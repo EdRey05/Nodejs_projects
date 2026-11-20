@@ -14,7 +14,6 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from parsers import sequencing as seqp
-from bulk_import import _insert_rows  # noqa: F401 (kept for prefix-style callers)
 
 
 def _insert_rows_plain(conn, table_name: str, rows: list) -> None:

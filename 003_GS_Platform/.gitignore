@@ -38,12 +38,10 @@ next-env.d.ts
 
 # local database files (the app creates these at runtime)
 data/*.duckdb
-!/data/synthetic_customers_seed.duckdb
+!/data/GSP_database.duckdb
 data/*.duckdb.wal
 data/obsolete/
 
-# local documentation (stays on this machine; not pushed)
-docs/
 
 .env*
 

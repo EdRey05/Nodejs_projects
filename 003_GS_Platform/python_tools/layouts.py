@@ -16,7 +16,7 @@ Ports (P2_4_LAYOUTS_SPEC.md):
   (tables arrive in Phase 5).
 
 All actions are JSON in/out and follow bridge.py conventions. Paths resolve
-from repo root (templates live in python_tools/templates/).
+from repo root. Workbook templates were deliberately removed; these generators remain drafts for future redesign.
 """
 
 import os

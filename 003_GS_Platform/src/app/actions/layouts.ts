@@ -56,28 +56,6 @@ export async function generateLigationLayout(payload: {
     };
 }
 
-export async function lookupVector(vector: string, enzyme?: string) {
-    const res = (await runBridge({ action: "lookup_vector", vector, ...(enzyme ? { enzyme } : {}) }) as any);
-    if (!res.success) return { success: false as const, message: res.message || "Lookup failed.", matches: [] };
-    return { success: true as const, matches: (res.data?.matches || []) as Record<string, any>[] };
-}
-
-export async function importVectorDbAction(xlsxPath: string) {
-    const res = (await runBridge({ action: "import_vector_db", xlsx_path: xlsxPath, dry_run: false, commit: true }) as any);
-    return { success: !!res.success, message: res.message || res.data?.message || "" };
-}
-
-export async function importPrimerLogAction(xlsxPath?: string) {
-    const res = (await runBridge({ action: "import_primer_log", ...(xlsxPath ? { xlsx_path: xlsxPath } : {}), dry_run: false, commit: true }) as any);
-    return { success: !!res.success, message: res.message || res.data?.message || "" };
-}
-
-export async function fetchPrimerMapAction() {
-    const res = (await runBridge({ action: "fetch_primer_map" }) as any);
-    if (!res.success) return { success: false as const, mapping: {} as Record<string, string> };
-    return { success: true as const, mapping: (res.data?.mapping || {}) as Record<string, string> };
-}
-
 export async function buildColonyPcrLayoutAction(payload: {
     ligation_entry_codes?: string[];
     ligation_xlsx_path?: string;

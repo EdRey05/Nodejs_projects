@@ -2,25 +2,9 @@
 
 import { LogType } from "@/lib/types";
 import { createDataZip } from "@/lib/storage";
-import { runBridge, runPythonScript } from "./python-bridge";
+import { runBridge } from "./python-bridge";
 
-export async function initializeDuckDB() {
-    try {
-        const result = await runBridge({ action: 'db_init' }) as any;
-        return result;
-    } catch (error: any) {
-        return { success: false, message: error.message };
-    }
-}
 
-export async function runDataMigration() {
-    try {
-        const result = await runPythonScript('migrate_data.py', {}) as any;
-        return result;
-    } catch (error: any) {
-        return { success: false, message: error.message };
-    }
-}
 
 export async function downloadDataZip() {
     try {

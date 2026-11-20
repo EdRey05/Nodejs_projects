@@ -5,7 +5,7 @@ Bridges the pilot resources into the app per P2_4_LAYOUTS_SPEC.md §1:
   (per-lot digested-vector rows with resistance/base-length joined from the
   Vector sheet), upsert by (vector_name, enzyme, lot).
 - get_user_profiles()/resolve_initials: data/user_profiles.json lookup.
-- list_templates(): available shipped templates in python_tools/templates/.
+- list_templates(): available files in the optional templates directory (currently removed).
 
 Naming convention (ported from pilot): year letters S=2024, T=2025, U=2026,
 V=2027 ... wraps at Z; default filenames carry the caller's initials.
@@ -324,7 +324,7 @@ TEMPLATE_META = {
 
 
 def list_templates(_args: dict | None = None) -> dict:
-    """Bridge action: which shipped templates exist in python_tools/templates/."""
+    """Bridge action: which optional layout templates exist (currently none are shipped)."""
     found = []
     os.makedirs(TEMPLATES_DIR, exist_ok=True)
     for fname, meta in TEMPLATE_META.items():

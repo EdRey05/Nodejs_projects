@@ -1,0 +1,320 @@
+[
+  {
+    "vector": "pUCm-T",
+    "resistance": "",
+    "source_url": "",
+    "verification_status": "Unverified"
+  },
+  {
+    "vector": "pUC57-Amp",
+    "resistance": "Ampicillin",
+    "source_url": "https://www.genosphere-biotech.com/services/custom-genes/cloning-vectors/",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pUC57-Kan",
+    "resistance": "Kanamycin",
+    "source_url": "https://www.genosphere-biotech.com/services/custom-genes/cloning-vectors/",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pUC19",
+    "resistance": "Ampicillin",
+    "source_url": "https://www.neb.com/en/-/media/nebus/files/catalogs/neb_usacatalog_rgb_150dpi.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pUCP-18",
+    "resistance": "",
+    "source_url": "",
+    "verification_status": "Unverified"
+  },
+  {
+    "vector": "pET-17b",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pcDNA3.1",
+    "resistance": "Ampicillin",
+    "source_url": "https://assets.thermofisher.com/TFS-Assets/vectors/pcdna3.1-.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-9a",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pBluescript II SK+",
+    "resistance": "Ampicillin",
+    "source_url": "https://www.agilent.com/cs/library/usermanuals/public/212205.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-42a(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-51b(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-52b(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-29a(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pUC-SPK",
+    "resistance": "",
+    "source_url": "",
+    "verification_status": "Unverified"
+  },
+  {
+    "vector": "pUC-SP",
+    "resistance": "",
+    "source_url": "",
+    "verification_status": "Unverified"
+  },
+  {
+    "vector": "pET-16b(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-19b(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-48b(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-50b(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-49b(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-26b(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pEGFP-C3",
+    "resistance": "Kanamycin",
+    "source_url": "https://www.addgene.org/vector-database/query/",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-20b(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pEGFP-N1",
+    "resistance": "Kanamycin",
+    "source_url": "https://www.addgene.org/vector-database/query/",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pGEX-4T-1",
+    "resistance": "Ampicillin",
+    "source_url": "https://www.genscript.com/vector/detail?refer=gensmart&vector_name=cEdFWC00VC0x",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-47b(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-29b(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-41a(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-30a(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-24a(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-21a(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-43.1a(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-28a(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-28b(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-11a(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-9a(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-21b(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-32b(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-32a(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-3a(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-15b(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-42b(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pEGFP-C1",
+    "resistance": "Kanamycin",
+    "source_url": "https://www.addgene.org/vector-database/query/",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-22b(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-45b(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-24d(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-24b(+)",
+    "resistance": "Kanamycin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pET-17b(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://pro.unibz.it/staff2/sbenini/documents/laboratory_and_safety/information_and_protocols_B2Cl/Novagen_petsystem.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pCDNA3.1(-)",
+    "resistance": "Ampicillin",
+    "source_url": "https://assets.thermofisher.com/TFS-Assets/vectors/pcdna3.1-.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pcDNA3.1(+)",
+    "resistance": "Ampicillin",
+    "source_url": "https://assets.thermofisher.com/TFS-Assets/vectors/pcdna3.1-.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pBluescript II KS+",
+    "resistance": "Ampicillin",
+    "source_url": "https://www.agilent.com/cs/library/usermanuals/public/212205.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "pUC18",
+    "resistance": "Ampicillin",
+    "source_url": "https://www.neb.com/en/-/media/nebus/files/catalogs/neb_usacatalog_rgb_150dpi.pdf",
+    "verification_status": "Verified"
+  },
+  {
+    "vector": "DNA Fragment - No Vector",
+    "resistance": "",
+    "source_url": "",
+    "verification_status": "Not applicable"
+  }
+]
